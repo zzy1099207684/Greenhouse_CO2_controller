@@ -30,9 +30,9 @@ int main() {
     stdio_init_all();
 
     printf("Starting GPIO blinker...\n");
-    
+
     xTaskCreate(blink_task, "Blink", 256, NULL, 1, NULL);
     vTaskStartScheduler();
-    
+
     return 0;
 }

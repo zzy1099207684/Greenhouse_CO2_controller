@@ -10,7 +10,7 @@ SET(FREERTOS_KERNEL_PATH ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/FreeRTOS-Ke
 include($ENV{PICO_SDK_PATH}/external/pico_sdk_import.cmake)
 include(${FREERTOS_KERNEL_PATH}/portable/ThirdParty/GCC/RP2040/FreeRTOS_Kernel_import.cmake)
 
-# Set name of project (as PROJECT_NAME) and C/C   standards
+# Set name of project (as PROJECT_NAME) and C/C standards
 project(Greenhouse_CO2 C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
@@ -19,17 +19,33 @@ set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
 add_compile_options(-Wall
-        -Wno-format          # int != int32_t as far as the compiler is concerned because gcc has int32_t as long int
-        -Wno-unused-function # we have some for the docs that aren't called
+        -Wno-format
+        -Wno-unused-function
         -Wno-maybe-uninitialized
 )
 
-# Tell CMake where to find the executable source file
-add_executable(${PROJECT_NAME}
-        src/main.cpp
+# Create a library with all your application code
+# This library can be used by both the main executable and tests
+add_library(${PROJECT_NAME}_lib
+        src/Greenhouse_Monitor/GreenhouseController.cpp
+        src/Greenhouse_Monitor/GreenhouseController.h
+        src/EEPROM/EEPROM.cpp
+        src/EEPROM/EEPROM.h
+        src/Environment_Sensor/HumidityTempSensor.cpp
+        src/Environment_Sensor/HumidityTempSensor.h
+        src/Environment_Sensor/PressureSensor.cpp
+        src/Environment_Sensor/PressureSensor.h
+        # Include the I2C driver that EEPROM depends on
+        rp2040-freertos/src/i2c/PicoI2C.cpp
+        rp2040-freertos/src/i2c/PicoI2C.h
+        # Include the mutex wrapper
+        rp2040-freertos/src/Fmutex.cpp
+        rp2040-freertos/src/Fmutex.h
 )
 
-include_directories(
+# Set include directories for the library
+# Anyone who links to this library will automatically get these include paths
+target_include_directories(${PROJECT_NAME}_lib PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/modbus
@@ -39,22 +55,8 @@ include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/ipstack
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/modbus
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/i2c
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/display
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/uart
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/ipstack
-
-)
-
-# Create map/bin/hex/uf2 files
-pico_add_extra_outputs(${PROJECT_NAME})
-
-# Link to pico_stdlib (gpio, time, etc. functions)
-target_link_libraries(${PROJECT_NAME}
+# Link libraries that the library itself needs
+target_link_libraries(${PROJECT_NAME}_lib
         pico_stdlib
         hardware_pwm
         hardware_gpio
@@ -64,6 +66,24 @@ target_link_libraries(${PROJECT_NAME}
         FreeRTOS-Kernel-Heap4
 )
 
-# Disable usb output, enable uart output
+# Now create the main executable with just the main.cpp
+# It will use all the code from the library
+add_executable(${PROJECT_NAME}
+        src/main.cpp
+)
+
+# Link the main executable to the library
+target_link_libraries(${PROJECT_NAME}
+        ${PROJECT_NAME}_lib
+)
+
+# Create map/bin/hex/uf2 files for main executable
+pico_add_extra_outputs(${PROJECT_NAME})
+
+# Disable usb output, enable uart output for main executable
 pico_enable_stdio_usb(${PROJECT_NAME} 0)
 pico_enable_stdio_uart(${PROJECT_NAME} 1)
+
+# Add the test subdirectory
+# This will process the CMakeLists.txt in the test folder
+add_subdirectory(test)
