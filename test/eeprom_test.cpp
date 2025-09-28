@@ -6,6 +6,7 @@
 #include "task.h"
 #include <stdio.h>
 #include <cstring>
+#include <memory>
 #include <pico/stdio.h>
 
 extern "C" {
@@ -18,11 +19,11 @@ extern "C" {
 void test_eeprom_task(void *params) {
     // First, we need to create the I2C bus that the EEPROM will use
     // Using I2C bus 0 at 100kHz (standard speed for EEPROM)
-    PicoI2C i2c(1, 100000);
+    auto i2cbus{std::make_shared<PicoI2C>(1, 400000)};
 
     // Create the EEPROM object with I2C address 0x50 (common EEPROM address)
     // Check your EEPROM datasheet for the correct address
-    EEPROM eeprom(i2c, 0x50);
+    EEPROM eeprom(i2cbus);
 
     printf("=== EEPROM Test Suite Starting ===\n\n");
 

@@ -5,12 +5,14 @@
 #ifndef EEPROMMANAGER_H
 #define EEPROMMANAGER_H
 
+#include <memory>
+
 #include "../../rp2040-freertos/src/i2c/PicoI2C.h"
 
 class EEPROM {
 private:
-    PicoI2C& i2c;
-    uint8_t deviceAddr;
+    std::shared_ptr<PicoI2C> i2c;
+    static constexpr uint8_t deviceAddr = 0x50;
 
     static constexpr uint8_t PAGE_SIZE = 64;
     static constexpr uint32_t EEPROM_WRITE_TIMEOUT = 1000;
@@ -32,7 +34,7 @@ private:
 
 
 public:
-    EEPROM(PicoI2C& i2cInterface, uint8_t deviceAddr);
+    explicit EEPROM(const std::shared_ptr<PicoI2C> &i2c_bus);
     bool writeCO2Value(uint16_t co2_value);
     bool readCO2Value(uint16_t& co2_value) const;
     bool writeSSID(const char* ssid);

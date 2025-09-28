@@ -11,7 +11,6 @@
 
 class HumidityTempSensor {
 private:
-    std::shared_ptr<PicoOsUart> uart;
     std::shared_ptr<ModbusClient> modbus_client;
     ModbusRegister temp_register;
     ModbusRegister humidity_register;
@@ -20,11 +19,10 @@ private:
     static constexpr float HUMIDITY_SCALE = 10.0f;
 
 public:
-    HumidityTempSensor();
+    explicit HumidityTempSensor(const std::shared_ptr<ModbusClient>& modbus_client);
 
     float readTemperature();
     float readHumidity();
-    void readBoth(float& temperature, float& humidity);
 
 };
 

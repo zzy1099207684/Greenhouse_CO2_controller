@@ -3,10 +3,11 @@
 //
 
 #include "EEPROM.h"
-
 #include <cstring>
 
-EEPROM::EEPROM(PicoI2C &i2cInterface, uint8_t deviceAddr) : i2c(i2cInterface), deviceAddr(deviceAddr){
+
+
+EEPROM::EEPROM(const std::shared_ptr<PicoI2C> &i2c_bus) : i2c(i2c_bus){
 }
 
 
@@ -28,7 +29,7 @@ bool EEPROM::writeBytes(const uint16_t address, const uint8_t *data, const uint1
             write_buffer[2 + i] = data[bytes_written + i];
         }
 
-        if (i2c.write(deviceAddr, write_buffer, bytes_to_write + 2) != static_cast<uint>(bytes_to_write + 2)) {
+        if (i2c->write(deviceAddr, write_buffer, bytes_to_write + 2) != static_cast<uint>(bytes_to_write + 2)) {
             return false;
         }
         // if (isBusy()) {
@@ -44,7 +45,7 @@ bool EEPROM::readBytes(const uint16_t address, uint8_t *data, const uint16_t len
     uint8_t addr_buffer[2];
     addr_buffer[0] = (address >> 8) & 0xFF;
     addr_buffer[1] = address & 0xFF;
-    return i2c.transaction(deviceAddr, addr_buffer, 2, data, length) == static_cast<uint>(2 + length);
+    return i2c->transaction(deviceAddr, addr_buffer, 2, data, length) == static_cast<uint>(2 + length);
 }
 
 bool EEPROM::writeCO2Value(const uint16_t co2_value) {

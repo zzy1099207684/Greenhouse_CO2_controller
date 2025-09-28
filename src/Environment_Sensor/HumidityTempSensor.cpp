@@ -4,18 +4,12 @@
 
 #include "HumidityTempSensor.h"
 
-#define UART_NR 1
-#define UART_BAUDRATE 19200
-#define UART_TX 4
-#define UART_RX 5
-#define STOP_BITS 2
 #define MODBUS_SERVER_ADDR 241
 #define RH_REGISTER_ADDR 256
 #define TEMP_REGISTER_ADDR 257
 
-HumidityTempSensor::HumidityTempSensor()
-    : uart(std::make_shared<PicoOsUart>(UART_NR, UART_TX, UART_RX, UART_BAUDRATE, STOP_BITS)),
-      modbus_client(std::make_shared<ModbusClient>(uart)),
+HumidityTempSensor::HumidityTempSensor(const std::shared_ptr<ModbusClient>& modbus_client)
+    :modbus_client(modbus_client),
       temp_register(modbus_client, MODBUS_SERVER_ADDR, TEMP_REGISTER_ADDR, true),
       humidity_register(modbus_client, MODBUS_SERVER_ADDR, RH_REGISTER_ADDR, true) {
 }
@@ -31,7 +25,3 @@ float HumidityTempSensor::readHumidity() {
     return raw / HUMIDITY_SCALE;
 }
 
-void HumidityTempSensor::readBoth(float& temperature, float& humidity) {
-    temperature = readTemperature();
-    humidity = readHumidity();
-}
