@@ -7,7 +7,7 @@
 
 #include <memory>
 
-#include "../../rp2040-freertos/src/i2c/PicoI2C.h"
+#include "PicoI2C.h"
 
 class PressureSensor {
 private:

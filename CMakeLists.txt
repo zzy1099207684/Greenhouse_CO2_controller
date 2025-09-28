@@ -27,8 +27,8 @@ add_compile_options(-Wall
 # Create a library with all your application code
 # This library can be used by both the main executable and tests
 add_library(${PROJECT_NAME}_lib
-        src/Greenhouse_Monitor/GreenhouseController.cpp
-        src/Greenhouse_Monitor/GreenhouseController.h
+        src/Greenhouse_Controller/GreenhouseController.cpp
+        src/Greenhouse_Controller/GreenhouseController.h
         src/EEPROM/EEPROM.cpp
         src/EEPROM/EEPROM.h
         src/Environment_Sensor/HumidityTempSensor.cpp
@@ -70,6 +70,8 @@ target_link_libraries(${PROJECT_NAME}_lib
 # It will use all the code from the library
 add_executable(${PROJECT_NAME}
         src/main.cpp
+        src/Environment_Sensor/EnvironmentMonitor.cpp
+        src/Environment_Sensor/EnvironmentMonitor.h
 )
 
 # Link the main executable to the library

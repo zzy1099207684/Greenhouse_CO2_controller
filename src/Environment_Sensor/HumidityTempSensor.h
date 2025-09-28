@@ -6,8 +6,8 @@
 #define HUMIDITYTEMPSENSOR_H
 
 #include <memory>
-#include "../../rp2040-freertos/src/modbus/ModbusClient.h"
-#include "../../rp2040-freertos/src/modbus/ModbusRegister.h"
+#include "ModbusClient.h"
+#include "ModbusRegister.h"
 
 class HumidityTempSensor {
 private:

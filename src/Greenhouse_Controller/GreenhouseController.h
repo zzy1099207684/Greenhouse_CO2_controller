@@ -5,11 +5,12 @@
 #ifndef GREENHOUSECONTROLLER_H
 #define GREENHOUSECONTROLLER_H
 
-#include "../../rp2040-freertos/FreeRTOS-KernelV10.6.2/include/FreeRTOS.h"
-#include "../../rp2040-freertos/FreeRTOS-KernelV10.6.2/include/task.h"
-#include "../../rp2040-freertos/FreeRTOS-KernelV10.6.2/include/queue.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
 
 #include "EEPROM/EEPROM.h"
+#include "Environment_Sensor/EnvironmentMonitor.h"
 
 
 typedef struct {
@@ -22,33 +23,26 @@ typedef struct {
 
 class GreenhouseController {
 private:
-    Co2Controller& co2_controller;
-
-    HumidityTempSensor& humidity_temp_sensor;
-    PressureSensor& pressure_sensor;
-
-    DisplayManager& display_manager;
-    NetworkManager& network_manager;
+    // Co2Controller& co2_controller;
+    // DisplayManager& display_manager;
+    // NetworkManager& network_manager;
     EEPROM& eeprom;
+    EnvironmentMonitor& environmentMonitor;
 
-    QueueHandle_t co2_set_queue;
-    QueueHandle_t co2_reading_queue;
+    QueueHandle_t co2_setting_q;
+    QueueHandle_t co2_reading_q;
+    QueueHandle_t environment_reading_q;
 
     SystemData_t system_data;
 
-    static void controllerTaskFunction(void* pvParameters);
+    static void waiting_co2_reading(void* pvParameters);
+    static void waiting_environment_reading(void* pvParameters);
+    static void waiting_co2_setting(void* pvParameters);
 
-    void updateDisplay();
-    void updateNetwork();
-
-    void saveSystemData();
-    void loadSystemData();
 
 public:
-    GreenhouseController();
+    GreenhouseController(EEPROM& eeprom, EnvironmentMonitor& environmentMonitor);
     ~GreenhouseController();
-    void init(); // call init function of all components, create queues, load data, create greenhouse controller task
-
 };
 
 
