@@ -136,6 +136,7 @@ void thing_speak_service::request_HTTPS(void *param) {
 }
 
 void thing_speak_service::start(void *param) {
+    wifi_init_once(param);
     TimerHandle_t get_Setting_CO2_data = xTimerCreate("get_SETTING_CO2_data",
                                                 pdMS_TO_TICKS(5000), // 5s
                                                 pdTRUE, // period

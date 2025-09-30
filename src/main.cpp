@@ -38,7 +38,6 @@ int main() {
     thing_speak ts;
     ts.set_ssid("xxxx");
     ts.set_pwd("xxxxx");
-    thing_speak_service::wifi_init_once(&ts);
     ts.set_setting_queue(xQueueCreate(50, sizeof(int)));
 
     thing_speak_service::start(&ts);
