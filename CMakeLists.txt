@@ -38,6 +38,10 @@ add_library(${PROJECT_NAME}_lib
         # Include the I2C driver that EEPROM depends on
         rp2040-freertos/src/i2c/PicoI2C.cpp
         rp2040-freertos/src/i2c/PicoI2C.h
+        rp2040-freertos/src/uart/PicoOsUart.cpp
+        rp2040-freertos/src/modbus/ModbusClient.cpp
+        rp2040-freertos/src/modbus/ModbusRegister.cpp
+        rp2040-freertos/src/modbus/nanomodbus.c
         # Include the mutex wrapper
         rp2040-freertos/src/Fmutex.cpp
         rp2040-freertos/src/Fmutex.h
