@@ -36,25 +36,12 @@ int main() {
     // xTaskCreate(blink_task, "Blink", 256, NULL, 1, NULL);
 
     thing_speak ts;
+    ts.set_ssid("xxxx");
+    ts.set_pwd("xxxxx");
     thing_speak_service::wifi_init_once(&ts);
+    ts.set_setting_queue(xQueueCreate(50, sizeof(int)));
 
-    TimerHandle_t get_Setting_CO2_data = xTimerCreate("get_SETTING_CO2_data",
-                                                pdMS_TO_TICKS(5000), // 5s
-                                                pdTRUE, // period
-                                                &ts,
-                                                thing_speak_service::get_SETTING_CO2_data);
-    xTimerStart(get_Setting_CO2_data, 0);
-
-
-    TimerHandle_t upload_data_to_ts = xTimerCreate("upload_data_to_thing_speak",
-                                                pdMS_TO_TICKS(15000), // 15s
-                                                pdTRUE, // period
-                                                &ts,
-                                                thing_speak_service::upload_data_to_thing_speak);
-    xTimerStart(upload_data_to_ts, 0);
-
-
-
+    thing_speak_service::start(&ts);
 
     vTaskStartScheduler();
 

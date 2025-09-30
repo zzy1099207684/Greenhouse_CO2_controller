@@ -66,8 +66,7 @@ public:
     char *get_read_api_key() { return read_api_key; }
 
     // queue getters
-    QueueHandle_t get_set_queue() const { return set_queue; }
-    SemaphoreHandle_t get_upload_Sem() const { return upload_Sem; }
+    QueueHandle_t get_setting_queue() const { return setting_queue; }
 
     // string setters
     void set_response(const char *s) { strncpy(response, s, sizeof(response) - 1); }
@@ -77,20 +76,19 @@ public:
     void set_pwd(const char *s) { strncpy(pwd, s, sizeof(pwd) - 1); }
     void set_write_api_key(const char *s) { strncpy(write_api_key, s, sizeof(write_api_key) - 1); }
     void set_read_api_key(const char *s) { strncpy(read_api_key, s, sizeof(read_api_key) - 1); }
+    void set_setting_queue(QueueHandle_t q) { setting_queue = q; }
 
     void init() {
     }
 
     thing_speak() {
-        set_queue = xQueueCreate(50, sizeof(int));
-        upload_Sem = xSemaphoreCreateBinary();
+        setting_queue = xQueueCreate(10, sizeof(int)); //default 10 if not set
         set_ssid("Redmi_138D");
         set_pwd("zzyzmy20272025888");
         set_api_server("api.thingspeak.com");
         set_write_api_key(WRITE_API_KEY);
         set_read_api_key(READ_API_KEY);
-        configASSERT(set_queue);
-        configASSERT(upload_Sem);
+        configASSERT(setting_queue);
     }
 
 private:
@@ -106,8 +104,7 @@ private:
     int Relative_humidity{INT_MIN};
     int Temperature{INT_MIN};
     int fan_speed{INT_MIN};
-    QueueHandle_t set_queue;
-    SemaphoreHandle_t upload_Sem;
+    QueueHandle_t setting_queue{nullptr};
 };
 
 

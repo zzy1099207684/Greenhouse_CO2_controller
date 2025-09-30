@@ -62,7 +62,7 @@ void thing_speak_service::deal_SETTING_CO2_data(void *param) {
     value = handler.get_final_result();
     if (strcmp(value, "") != 0) {
         field_5 = atoi(value);
-        xQueueSend(ts.get_set_queue(), &field_5, 0);
+        xQueueSend(ts.get_setting_queue(), &field_5, 0);
     }
 }
 
@@ -133,6 +133,23 @@ void thing_speak_service::request_HTTPS(void *param) {
     }
     /* sleep a bit to let usb stdio write out any buffer to host */
     vTaskDelay(pdMS_TO_TICKS(100));
+}
+
+void thing_speak_service::start(void *param) {
+    TimerHandle_t get_Setting_CO2_data = xTimerCreate("get_SETTING_CO2_data",
+                                                pdMS_TO_TICKS(5000), // 5s
+                                                pdTRUE, // period
+                                                &param,
+                                                get_SETTING_CO2_data);
+    xTimerStart(get_Setting_CO2_data, 0);
+
+
+    TimerHandle_t upload_data_to_ts = xTimerCreate("upload_data_to_thing_speak",
+                                                pdMS_TO_TICKS(15000), // 15s
+                                                pdTRUE, // period
+                                                &param,
+                                                upload_data_to_thing_speak);
+    xTimerStart(upload_data_to_ts, 0);
 }
 
 

@@ -24,6 +24,8 @@ public:
     static void wifi_init_once(void *param);
     static void request_HTTPS(void *param);
 
+    static void start(void *param);
+
 };
 
 
