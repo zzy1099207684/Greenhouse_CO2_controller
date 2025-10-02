@@ -4,11 +4,9 @@
 
 #include "EnvironmentMonitor.h"
 
-EnvironmentMonitor::EnvironmentMonitor(
-    PressureSensor &pressure_sen, HumidityTempSensor &humidity_temp_sen
-    ):pressure_sensor(pressure_sen),
-    humidity_temp_sensor(humidity_temp_sen),
-    data_queue(nullptr),
+EnvironmentMonitor::EnvironmentMonitor(HumidityTempSensor &humidity_temp_sensor
+    ):humidity_temp_sensor(humidity_temp_sensor),
+    controller_event_group(nullptr),
     timer_handle(nullptr){}
 
 EnvironmentMonitor::~EnvironmentMonitor() {
@@ -17,8 +15,8 @@ EnvironmentMonitor::~EnvironmentMonitor() {
     }
 }
 
-void EnvironmentMonitor::setQueue(QueueHandle_t queue) {
-    data_queue = queue;
+void EnvironmentMonitor::setEventGroup(EventGroupHandle_t event_group) {
+    controller_event_group = event_group;
 }
 
 
@@ -35,7 +33,7 @@ void EnvironmentMonitor::start() {
     if (timer_handle != nullptr) xTimerStart(timer_handle, 0);
 }
 
-void EnvironmentMonitor::stop() {
+void EnvironmentMonitor::stop() const {
     if (timer_handle != nullptr) xTimerStop(timer_handle, 0);
 }
 
@@ -44,11 +42,10 @@ void EnvironmentMonitor::timer_callback(TimerHandle_t xTimer) {
     monitor->readAndSendData();
 }
 
-void EnvironmentMonitor::readAndSendData() {
+void EnvironmentMonitor::readAndSendData() const {
     SensorData data{};
-    data.pressure = pressure_sensor.getPressure();
     data.temperature = humidity_temp_sensor.readTemperature();
     data.humidity = humidity_temp_sensor.readHumidity();
-    xQueueSend(data_queue, &data, portMAX_DELAY);
+
 }
 

@@ -4,7 +4,8 @@ include_directories(
 
 set(TEST_SOURCES
         eeprom_test.cpp
-        env_sensor_test.cpp
+        humidity_and_temp_test.cpp
+        pressure_test.cpp
 )
 
 foreach (TEST_SOURCE ${TEST_SOURCES})

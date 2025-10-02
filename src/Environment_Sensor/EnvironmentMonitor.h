@@ -10,34 +10,33 @@
 #include "HumidityTempSensor.h"
 #include "FreeRTOS.h"
 #include "task.h"
-#include "queue.h"
 #include "timers.h"
+#include "event_groups.h"
 
 
 class EnvironmentMonitor {
 private:
-    PressureSensor& pressure_sensor;
+    //PressureSensor& pressure_sensor;
     HumidityTempSensor& humidity_temp_sensor;
-    QueueHandle_t data_queue;
+    EventGroupHandle_t controller_event_group;
     TimerHandle_t timer_handle;
 
     static constexpr uint32_t INTERVAL_MS = 10000;
 
     static void timer_callback(TimerHandle_t xTimer);
 
-    void readAndSendData();
+    void readAndSendData() const;
 
 public:
     struct SensorData {
-        float pressure;
         float temperature;
         float humidity;
     };
 
-    explicit EnvironmentMonitor(PressureSensor& pressure_sen, HumidityTempSensor& humidity_temp_sen);
-    void setQueue(QueueHandle_t queue);
+    explicit EnvironmentMonitor(HumidityTempSensor& humidity_temp_sen);
+    void setEventGroup(EventGroupHandle_t event_group);
     void start();
-    void stop();
+    void stop() const;
     ~EnvironmentMonitor();
 };
 #endif //ENVIRONMENTMONITOR_H

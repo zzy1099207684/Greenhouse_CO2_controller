@@ -12,16 +12,19 @@ HumidityTempSensor::HumidityTempSensor(const std::shared_ptr<ModbusClient>& modb
     :modbus_client(modbus_client),
       temp_register(modbus_client, MODBUS_SERVER_ADDR, TEMP_REGISTER_ADDR, true),
       humidity_register(modbus_client, MODBUS_SERVER_ADDR, RH_REGISTER_ADDR, true) {
+    temperature = 0.0f;
+    humidity = 0.0f;
 }
 
 float HumidityTempSensor::readTemperature() {
     const uint16_t raw = temp_register.read();
-    const auto signed_value = static_cast<int16_t>(raw);
-    return signed_value / TEMP_SCALE;
+    temperature = raw / TEMP_SCALE;
+    return temperature;
 }
 
 float HumidityTempSensor::readHumidity() {
     const uint16_t raw = humidity_register.read();
-    return raw / HUMIDITY_SCALE;
+    humidity = raw / HUMIDITY_SCALE;
+    return humidity;
 }
 

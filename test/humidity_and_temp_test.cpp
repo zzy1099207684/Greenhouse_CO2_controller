@@ -12,9 +12,9 @@
 #include <pico/stdio.h>
 
 extern "C" {
-    uint32_t read_runtime_ctr(void) {
-        return timer_hw->timerawl;
-    }
+uint32_t read_runtime_ctr(void) {
+    return timer_hw->timerawl;
+}
 }
 
 void test_task(void *pvParameters) {
@@ -26,26 +26,15 @@ void test_task(void *pvParameters) {
     printf("Baud Rate: 9600\n");
     printf("Reading every 2 seconds...\n\n");
 
-    while(1) {
+    while (1) {
         // Read raw values
-        uint16_t humidity_raw = rh_t_sensor.readHumidity();
-        uint16_t temp_raw = rh_t_sensor.readTemperature();
-
-        // Convert to actual values (values are scaled by 10)
-        float humidity = humidity_raw / 10.0f;
-
-        // Temperature can be negative, so treat as signed
-        int16_t temp_signed = static_cast<int16_t>(temp_raw);
-        float temperature = temp_signed / 10.0f;
+        float humidity = rh_t_sensor.readHumidity();
+        float temp = rh_t_sensor.readTemperature();
 
         // Display results
         printf("----------------------------------------\n");
-        printf("Raw Values:\n");
-        printf("  Humidity:    %u (0x%04X)\n", humidity_raw, humidity_raw);
-        printf("  Temperature: %u (0x%04X)\n", temp_raw, temp_raw);
-        printf("\nConverted Values:\n");
         printf("  Humidity:    %.1f %%RH\n", humidity);
-        printf("  Temperature: %.1f °C\n", temperature);
+        printf("  Temperature: %.1f C\n", temp);
         printf("----------------------------------------\n\n");
 
         // Wait 2 seconds before next reading
@@ -58,7 +47,7 @@ int main() {
     stdio_init_all();
 
     // Give time for USB serial to connect
-    vTaskDelay(pdMS_TO_TICKS(2000));
+    // vTaskDelay(pdMS_TO_TICKS(2000));
 
     printf("\n\n");
     printf("====================================\n");
@@ -68,17 +57,16 @@ int main() {
     // Create test task
     xTaskCreate(test_task,
                 "TestTask",
-                1024,           // Stack size
-                NULL,           // Parameters
-                1,              // Priority
-                NULL);          // Task handle
+                1024, // Stack size
+                NULL, // Parameters
+                1, // Priority
+                NULL); // Task handle
 
     // Start FreeRTOS scheduler
     vTaskStartScheduler();
 
     // Should never reach here
-    while(1) {
-        tight_loop_contents();
+    while (1) {
     }
 
     return 0;

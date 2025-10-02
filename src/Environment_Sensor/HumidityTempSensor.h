@@ -15,6 +15,9 @@ private:
     ModbusRegister temp_register;
     ModbusRegister humidity_register;
 
+    float temperature;
+    float humidity;
+
     static constexpr float TEMP_SCALE = 10.0f;
     static constexpr float HUMIDITY_SCALE = 10.0f;
 
