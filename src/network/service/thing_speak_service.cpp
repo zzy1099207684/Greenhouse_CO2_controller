@@ -1,9 +1,18 @@
 //
 // Created by zhiyo on 2025/9/21.
 //
-
+#include "FreeRTOS.h"
+#include "../entry/thing_speak.h"
+#include "pico/stdlib.h"
+#include "pico/cyw43_arch.h"
+#include "lwip/apps/mdns.h"
+#include "task.h"
+#include <cstring>
+#include "Tools/json/json_handler.h"
+#include <timers.h>
 #include "thing_speak_service.h"
-#define BIT_NETWORK (1 << 2) // 0x00000004
+
+#define NETWORK_SET_CO2_BIT (1<<3)
 Json_handler handler;
 
 static char *extract_json(char *http_response);
@@ -58,7 +67,7 @@ void thing_speak_service::deal_SETTING_CO2_data(void *param) {
     if (strcmp(value, "") != 0) {
         const int field_5 = atoi(value);
         ts->set_co2_level_from_network(field_5);
-        xEventGroupSetBits(ts->get_co2_event_group(), BIT_NETWORK);
+        xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), NETWORK_SET_CO2_BIT); // set co2 level change bit
     }
 }
 
@@ -96,18 +105,6 @@ void thing_speak_service::upload_data_to_thing_speak(TimerHandle_t xTimer) {
     }
 }
 
-void thing_speak_service::wifi_connect(void *param) {
-    auto *ts = static_cast<thing_speak *>(param);
-    const char *ssid = ts->get_ssid();
-    const char *pwd = ts->get_pwd();
-    if (cyw43_arch_wifi_connect_timeout_ms(ssid, pwd, CYW43_AUTH_WPA2_AES_PSK, 30000)) {
-        printf("failed to connect\n");
-        return;
-    }
-    printf("WiFi connected\n");
-}
-
-
 void thing_speak_service::request_HTTPS(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
     constexpr uint8_t things_cert[] = THINGSPEAK_CERT;
@@ -125,21 +122,39 @@ void thing_speak_service::request_HTTPS(void *param) {
     vTaskDelay(pdMS_TO_TICKS(100));
 }
 
+void thing_speak_service::wifi_connect(void *param) {
+    auto *ts = static_cast<thing_speak *>(param);
+    const char *ssid = ts->get_ssid();
+    const char *pwd = ts->get_pwd();
+    while (cyw43_arch_wifi_connect_timeout_ms(ssid, pwd, CYW43_AUTH_WPA2_AES_PSK, 60000)) {
+        printf("failed to connect\n");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+    printf("WiFi connected\n");
+}
+
 void thing_speak_service::start(void *param) {
-    TimerHandle_t get_Setting_CO2_data = xTimerCreate("get_SETTING_CO2_data",
-                                                      pdMS_TO_TICKS(5000), // 5s
-                                                      pdTRUE, // period
-                                                      param,
-                                                      get_SETTING_CO2_data);
-    xTimerStart(get_Setting_CO2_data, 0);
+    printf("start start start\n");
+    EventBits_t b = xEventGroupWaitBits(static_cast<thing_speak *>(param)->get_co2_wifi_scan_event_group(), WIFI_INIT_BIT, pdFALSE,
+                                        pdTRUE,portMAX_DELAY); // wait for wifi init success
+    if (b & WIFI_INIT_BIT) {
+        wifi_connect(param);
+        TimerHandle_t get_Setting_CO2_data = xTimerCreate("get_SETTING_CO2_data",
+                                                          pdMS_TO_TICKS(5000), // 5s
+                                                          pdTRUE, // period
+                                                          param,
+                                                          get_SETTING_CO2_data);
+        xTimerStart(get_Setting_CO2_data, 0);
 
 
-    TimerHandle_t upload_data_to_ts = xTimerCreate("upload_data_to_thing_speak",
-                                                   pdMS_TO_TICKS(15000), // 15s
-                                                   pdTRUE, // period
-                                                   param,
-                                                   upload_data_to_thing_speak);
-    xTimerStart(upload_data_to_ts, 0);
+        TimerHandle_t upload_data_to_ts = xTimerCreate("upload_data_to_thing_speak",
+                                                       pdMS_TO_TICKS(15000), // 15s
+                                                       pdTRUE, // period
+                                                       param,
+                                                       upload_data_to_thing_speak);
+        xTimerStart(upload_data_to_ts, 0);
+        vTaskDelete(nullptr); // delete self task
+    }
 }
 
 
@@ -167,36 +182,50 @@ static int scan_cb(void *param, const cyw43_ev_scan_result_t *res) {
     auto *ts = static_cast<thing_speak *>(param);
     if (res) {
         auto wifi_scan_result = ts->get_wifi_scan_result();
-        int index = ts->get_wifi_ssid_index();
+        const int index = ts->get_wifi_ssid_index();
         for (int i = 0; i < 10; ++i) {
-            if (wifi_scan_result[i][0] != '\0' && strcmp(wifi_scan_result[i], res->ssid) == 0) {
+            if (wifi_scan_result[i][0] != '\0' && strcmp(wifi_scan_result[i], reinterpret_cast<const char *>(res->ssid))
+                == 0) {
                 return 0;
             }
         }
         if (index < 10) {
-            ts->set_wifi_scan_result(index, res->ssid);
+            char buf[64];
+            int len = res->ssid_len;
+            if (len > 63) len = 63;
+            memcpy(buf, res->ssid, len);
+            buf[len] = '\0';
+            ts->set_wifi_scan_result(index, buf);
             ts->set_wifi_ssid_index(index + 1);
         }
+    }else {
+        // scan done
+        xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_SCAN_BIT); // wifi scan done bit
+        printf("scan_cb: scan done\n");
     }
     return 0;
 }
 
 void thing_speak_service::scan_wifi_ssid_arr(void *param) {
+    printf("Start Wi-Fi scan...\n");
     auto *ts = static_cast<thing_speak *>(param);
-    if (cyw43_arch_init_with_country(CYW43_COUNTRY_FINLAND) != 0) {
-        printf("cyw43 init failed\n");
-        return;
-    }
-
     ts->set_wifi_ssid_index(0);
     ts->init_wifi_scan_result();
-    cyw43_arch_enable_sta_mode();
     cyw43_wifi_scan_options_t opts = {0};
     int rc = cyw43_wifi_scan(&cyw43_state, &opts, ts, scan_cb);
     if (rc != 0) {
         printf("scan start failed: %d\n", rc);
     }
-    while (cyw43_wifi_scan_active(&cyw43_state)) {
-        vTaskDelay(pdMS_TO_TICKS(50));
+    printf("Scan done.\n");
+}
+
+void thing_speak_service::wifi_init() {
+    printf("WiFi init start\n");
+    if (cyw43_arch_init_with_country(CYW43_COUNTRY_WORLDWIDE) != 0) {
+        printf("WiFi init failed\n");
+        return;
     }
+    cyw43_arch_enable_sta_mode();
+
+    printf("WiFi init success\n");
 }

@@ -28,8 +28,6 @@ add_compile_options(-Wall
 add_executable(${PROJECT_NAME}
         src/main.cpp
         rp2040-freertos/src/ipstack/IPStack.h
-        rp2040-freertos/src/ipstack/lwipopts.h
-        rp2040-freertos/src/ipstack/lwipopts_tls.h
         rp2040-freertos/src/ipstack/mbedtls_config.h
         rp2040-freertos/src/ipstack/picow_tls_client.c
         rp2040-freertos/src/ipstack/tls_common.c
@@ -38,31 +36,30 @@ add_executable(${PROJECT_NAME}
         src/network/service/thing_speak_service.cpp
         src/network/service/thing_speak_service.h
         src/network/entry/thing_speak.h
-        src/network/service/thing_speak_service.cpp
         src/network/Tools/json/Json_handler.cpp
         src/network/Tools/json/Json_handler.h
         src/network/Tools/json/core_json.c
 
 )
-
+target_compile_definitions(${PROJECT_NAME} PRIVATE MBEDTLS_PLATFORM_MS_TIME_ALT)
 include_directories(
+        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/ipstack
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/modbus
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/i2c
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/display
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/uart
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/ipstack
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/ipstack
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/modbus
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/i2c
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/display
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/uart
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/ipstack
         ${CMAKE_CURRENT_SOURCE_DIR}/src/network
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Tools
 
@@ -81,14 +78,11 @@ target_link_libraries(${PROJECT_NAME}
         hardware_i2c
         FreeRTOS-Kernel
         FreeRTOS-Kernel-Heap4
-        pico_lwip_mbedtls
+#        pico_cyw43_arch_lwip_threadsafe_background
+        pico_cyw43_arch_lwip_sys_freertos
         pico_mbedtls
-        pico_cyw43_arch_lwip_threadsafe_background
+        pico_lwip_mbedtls
         pico_lwip
-        pico_lwip_core
-        pico_lwip_http
-        pico_lwip_sntp
-
 
 )
 

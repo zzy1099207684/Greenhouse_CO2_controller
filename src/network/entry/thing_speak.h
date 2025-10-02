@@ -15,6 +15,11 @@
 #include "pico/util/datetime.h"
 #include "lwip/apps/sntp.h"
 
+#define WIFI_INIT_BIT (1 << 0) // wifi_init_success_bit
+#define WIFI_SCAN_BIT (1 << 1) // wifi_scan_done bit
+#define NETWORK_SET_CO2_BIT (1<<3) // co2_event_group
+
+
 #define WRITE_API_KEY "3O010WOMXCBHN887"
 #define READ_API_KEY  "754RZS4U9IAOOGOE"
 
@@ -45,10 +50,10 @@ MrY=\n\
 class thing_speak {
 public:
     // data getters
-    [[nodiscard]] int get_CO2_level() const { return CO2_level; }
-    [[nodiscard]] int get_Relative_humidity() const { return Relative_humidity; }
-    [[nodiscard]] int get_Temperature() const { return Temperature; }
-    [[nodiscard]] int get_fan_speed() const { return fan_speed; }
+    int get_CO2_level() const { return CO2_level; }
+    int get_Relative_humidity() const { return Relative_humidity; }
+    int get_Temperature() const { return Temperature; }
+    int get_fan_speed() const { return fan_speed; }
 
     // data setters
     void set_CO2_level(const int v) { CO2_level = v; }
@@ -56,7 +61,7 @@ public:
     void set_Temperature(const int v) { Temperature = v; }
     void set_fan_speed(const int v) { fan_speed = v; }
     void set_co2_level_from_network(const int v) { co2_level_from_network = v; }
-    [[nodiscard]] int get_co2_level_from_network() const { return co2_level_from_network; }
+    int get_co2_level_from_network() const { return co2_level_from_network; }
 
     // string getters
     char *get_response() { return response; }
@@ -67,11 +72,11 @@ public:
     char *get_write_api_key() { return write_api_key; }
     char *get_read_api_key() { return read_api_key; }
     char (*get_wifi_scan_result())[64] { return wifi_scan_result; }
-    [[nodiscard]] int get_wifi_ssid_index() const { return wifi_ssid_index; }
+    int get_wifi_ssid_index() const { return wifi_ssid_index; }
 
     // Group getters and setters
-    [[nodiscard]] EventGroupHandle_t get_co2_event_group() const { return co2_event_group; }
-    void set_co2_event_group(EventGroupHandle_t eg) { co2_event_group = eg; }
+    [[nodiscard]] EventGroupHandle_t get_co2_wifi_scan_event_group() const { return co2_wifi_scan_event_group; }
+    void set_co2_wifi_scan_event_group(EventGroupHandle_t g) { co2_wifi_scan_event_group = g; }
 
     // string setters
     void set_response(const char *s) { strncpy(response, s, sizeof(response) - 1); }
@@ -114,10 +119,9 @@ private:
     int Temperature{INT_MIN};
     int fan_speed{INT_MIN};
     int co2_level_from_network{INT_MIN};
-    EventGroupHandle_t co2_event_group{};
-    char wifi_scan_result[10][64];
+    EventGroupHandle_t co2_wifi_scan_event_group{};
+    char wifi_scan_result[10][64]{};
     int wifi_ssid_index{0};
 };
-
 
 #endif //THING_SPEAK_H
