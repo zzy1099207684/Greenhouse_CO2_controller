@@ -12,7 +12,6 @@
 #include <timers.h>
 #include "thing_speak_service.h"
 
-#define NETWORK_SET_CO2_BIT (1<<3)
 Json_handler handler;
 
 static char *extract_json(char *http_response);
@@ -70,7 +69,6 @@ void thing_speak_service::deal_SETTING_CO2_data(void *param) {
         xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), NETWORK_SET_CO2_BIT); // set co2 level change bit
     }
 }
-
 
 // task
 void thing_speak_service::upload_data_to_thing_speak(TimerHandle_t xTimer) {
@@ -133,30 +131,6 @@ void thing_speak_service::wifi_connect(void *param) {
     printf("WiFi connected\n");
 }
 
-void thing_speak_service::start(void *param) {
-    printf("start start start\n");
-    EventBits_t b = xEventGroupWaitBits(static_cast<thing_speak *>(param)->get_co2_wifi_scan_event_group(), WIFI_INIT_BIT, pdFALSE,
-                                        pdTRUE,portMAX_DELAY); // wait for wifi init success
-    if (b & WIFI_INIT_BIT) {
-        wifi_connect(param);
-        TimerHandle_t get_Setting_CO2_data = xTimerCreate("get_SETTING_CO2_data",
-                                                          pdMS_TO_TICKS(5000), // 5s
-                                                          pdTRUE, // period
-                                                          param,
-                                                          get_SETTING_CO2_data);
-        xTimerStart(get_Setting_CO2_data, 0);
-
-
-        TimerHandle_t upload_data_to_ts = xTimerCreate("upload_data_to_thing_speak",
-                                                       pdMS_TO_TICKS(15000), // 15s
-                                                       pdTRUE, // period
-                                                       param,
-                                                       upload_data_to_thing_speak);
-        xTimerStart(upload_data_to_ts, 0);
-        vTaskDelete(nullptr); // delete self task
-    }
-}
-
 
 static char *extract_json(char *http_response) {
     char *body = strstr(http_response, "\r\n{");
@@ -180,28 +154,22 @@ static char *extract_json(char *http_response) {
 
 static int scan_cb(void *param, const cyw43_ev_scan_result_t *res) {
     auto *ts = static_cast<thing_speak *>(param);
-    if (res) {
-        auto wifi_scan_result = ts->get_wifi_scan_result();
-        const int index = ts->get_wifi_ssid_index();
-        for (int i = 0; i < 10; ++i) {
-            if (wifi_scan_result[i][0] != '\0' && strcmp(wifi_scan_result[i], reinterpret_cast<const char *>(res->ssid))
-                == 0) {
-                return 0;
-            }
+    auto wifi_scan_result = ts->get_wifi_scan_result();
+    const int index = ts->get_wifi_ssid_index();
+    for (int i = 0; i < 10; ++i) {
+        if (wifi_scan_result[i][0] != '\0' &&
+            strcmp(wifi_scan_result[i], reinterpret_cast<const char *>(res->ssid)) == 0) {
+            return 0;
         }
-        if (index < 10) {
-            char buf[64];
-            int len = res->ssid_len;
-            if (len > 63) len = 63;
-            memcpy(buf, res->ssid, len);
-            buf[len] = '\0';
-            ts->set_wifi_scan_result(index, buf);
-            ts->set_wifi_ssid_index(index + 1);
-        }
-    }else {
-        // scan done
-        xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_SCAN_BIT); // wifi scan done bit
-        printf("scan_cb: scan done\n");
+    }
+    if (index < 10 && res->ssid_len > 0) {
+        char buf[64];
+        int len = res->ssid_len;
+        if (len > 63) len = 63;
+        memcpy(buf, res->ssid, len);
+        buf[len] = '\0';
+        ts->set_wifi_scan_result(index, buf);
+        ts->set_wifi_ssid_index(index + 1);
     }
     return 0;
 }
@@ -216,16 +184,47 @@ void thing_speak_service::scan_wifi_ssid_arr(void *param) {
     if (rc != 0) {
         printf("scan start failed: %d\n", rc);
     }
+    while (cyw43_wifi_scan_active(&cyw43_state)) {
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+    xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_SCAN_DONE_BIT);
     printf("Scan done.\n");
 }
 
-void thing_speak_service::wifi_init() {
+void thing_speak_service::wifi_init(void *param) {
+    auto *ts = static_cast<thing_speak *>(param);
     printf("WiFi init start\n");
     if (cyw43_arch_init_with_country(CYW43_COUNTRY_WORLDWIDE) != 0) {
         printf("WiFi init failed\n");
         return;
     }
     cyw43_arch_enable_sta_mode();
-
+    xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_INIT_BIT); // set wifi init success bit
     printf("WiFi init success\n");
+}
+
+
+void thing_speak_service::start(void *param) {
+    printf("timer start\n");
+    EventBits_t b = xEventGroupWaitBits(static_cast<thing_speak *>(param)->get_co2_wifi_scan_event_group(),
+                                        WIFI_INIT_BIT, pdFALSE,
+                                        pdTRUE,portMAX_DELAY); // wait for wifi init success
+    if (b & WIFI_INIT_BIT) {
+        wifi_connect(param);
+        TimerHandle_t get_Setting_CO2_data = xTimerCreate("get_SETTING_CO2_data",
+                                                          pdMS_TO_TICKS(5000), // 5s
+                                                          pdTRUE, // period
+                                                          param,
+                                                          get_SETTING_CO2_data);
+        xTimerStart(get_Setting_CO2_data, 0);
+
+
+        TimerHandle_t upload_data_to_ts = xTimerCreate("upload_data_to_thing_speak",
+                                                       pdMS_TO_TICKS(15000), // 15s
+                                                       pdTRUE, // period
+                                                       param,
+                                                       upload_data_to_thing_speak);
+        xTimerStart(upload_data_to_ts, 0);
+        vTaskDelete(nullptr); // delete self task
+    }
 }

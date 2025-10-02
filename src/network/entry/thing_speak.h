@@ -15,8 +15,8 @@
 #include "pico/util/datetime.h"
 #include "lwip/apps/sntp.h"
 
-#define WIFI_INIT_BIT (1 << 0) // wifi_init_success_bit
-#define WIFI_SCAN_BIT (1 << 1) // wifi_scan_done bit
+#define WIFI_INIT_BIT (1 << 0) // wifi_init_success bit
+#define WIFI_SCAN_DONE_BIT (1 << 1) // wifi_scan_done bit
 #define NETWORK_SET_CO2_BIT (1<<3) // co2_event_group
 
 
