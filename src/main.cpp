@@ -31,16 +31,20 @@ extern "C" {
 int main() {
     stdio_init_all();
 
-    // printf("Starting GPIO blinker...\n");
-    
-    // xTaskCreate(blink_task, "Blink", 256, NULL, 1, NULL);
+    // create a event group for co2 level change notification
+    EventGroupHandle_t co2_event_group = xEventGroupCreate();
 
     thing_speak ts;
-    ts.set_ssid("xxxx");
-    ts.set_pwd("xxxxx");
-    ts.set_setting_queue(xQueueCreate(50, sizeof(int)));
+    ts.set_co2_event_group(co2_event_group); // set event group
+    thing_speak_service::scan_wifi_ssid_arr(&ts); // scan wifi ssid array
+    auto ssids = ts.get_wifi_scan_result();// get scan result
 
-    thing_speak_service::start(&ts);
+    ts.set_ssid(ssids[0]); // set ssid
+    ts.set_pwd("WIFI_PASSWORD"); // set wifi password
+
+    thing_speak_service::wifi_connect(&ts); // connect to wifi
+
+    thing_speak_service::start(&ts); // start thing speak service tasks
 
     vTaskStartScheduler();
 

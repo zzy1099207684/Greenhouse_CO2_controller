@@ -5,10 +5,12 @@
 #ifndef THING_SPEAK_H
 #define THING_SPEAK_H
 
+#include <event_groups.h>
+
 #include "FreeRTOS.h"
-#include <string.h>
+#include <cstring>
 #include "queue.h"
-#include "limits.h"
+#include <climits>
 #include "semphr.h"
 #include "pico/util/datetime.h"
 #include "lwip/apps/sntp.h"
@@ -43,18 +45,18 @@ MrY=\n\
 class thing_speak {
 public:
     // data getters
-    int get_CO2_level() const { return CO2_level; }
-    int get_Relative_humidity() const { return Relative_humidity; }
-    int get_Temperature() const { return Temperature; }
-    int get_fan_speed() const { return fan_speed; }
-    int get_request_type() const { return request_type; } // 0: read, 1: write
+    [[nodiscard]] int get_CO2_level() const { return CO2_level; }
+    [[nodiscard]] int get_Relative_humidity() const { return Relative_humidity; }
+    [[nodiscard]] int get_Temperature() const { return Temperature; }
+    [[nodiscard]] int get_fan_speed() const { return fan_speed; }
 
     // data setters
-    void set_CO2_level(int v) { CO2_level = v; }
-    void set_Relative_humidity(int v) { Relative_humidity = v; }
-    void set_Temperature(int v) { Temperature = v; }
-    void set_fan_speed(int v) { fan_speed = v; }
-    void set_request_type(int v) { request_type = v; }
+    void set_CO2_level(const int v) { CO2_level = v; }
+    void set_Relative_humidity(const int v) { Relative_humidity = v; }
+    void set_Temperature(const int v) { Temperature = v; }
+    void set_fan_speed(const int v) { fan_speed = v; }
+    void set_co2_level_from_network(const int v) { co2_level_from_network = v; }
+    [[nodiscard]] int get_co2_level_from_network() const { return co2_level_from_network; }
 
     // string getters
     char *get_response() { return response; }
@@ -64,9 +66,12 @@ public:
     char *get_pwd() { return pwd; }
     char *get_write_api_key() { return write_api_key; }
     char *get_read_api_key() { return read_api_key; }
+    char (*get_wifi_scan_result())[64] { return wifi_scan_result; }
+    [[nodiscard]] int get_wifi_ssid_index() const { return wifi_ssid_index; }
 
-    // queue getters
-    QueueHandle_t get_setting_queue() const { return setting_queue; }
+    // Group getters and setters
+    [[nodiscard]] EventGroupHandle_t get_co2_event_group() const { return co2_event_group; }
+    void set_co2_event_group(EventGroupHandle_t eg) { co2_event_group = eg; }
 
     // string setters
     void set_response(const char *s) { strncpy(response, s, sizeof(response) - 1); }
@@ -76,19 +81,24 @@ public:
     void set_pwd(const char *s) { strncpy(pwd, s, sizeof(pwd) - 1); }
     void set_write_api_key(const char *s) { strncpy(write_api_key, s, sizeof(write_api_key) - 1); }
     void set_read_api_key(const char *s) { strncpy(read_api_key, s, sizeof(read_api_key) - 1); }
-    void set_setting_queue(QueueHandle_t q) { setting_queue = q; }
+    void set_wifi_scan_result(const int index, const char *value)  {
+        if (index < 0 || index >= 10) return;
+        strncpy(wifi_scan_result[index], value, sizeof(wifi_scan_result[index]) - 1);
+        wifi_scan_result[index][sizeof(wifi_scan_result[index]) - 1] = '\0';
+    }
 
-    void init() {
+    void set_wifi_ssid_index(const int index) { wifi_ssid_index = index; }
+
+    void init_wifi_scan_result() {
+        for (auto &p : wifi_scan_result) {
+            p[0] = '\0';
+        }
     }
 
     thing_speak() {
-        setting_queue = xQueueCreate(10, sizeof(int)); //default 10 if not set
-        set_ssid("Redmi_138D");
-        set_pwd("zzyzmy20272025888");
         set_api_server("api.thingspeak.com");
         set_write_api_key(WRITE_API_KEY);
         set_read_api_key(READ_API_KEY);
-        configASSERT(setting_queue);
     }
 
 private:
@@ -99,12 +109,14 @@ private:
     char pwd[64]{};
     char write_api_key[64]{};
     char read_api_key[64]{};
-    int request_type{0}; // 0: read, 1: write
     int CO2_level{INT_MIN};
     int Relative_humidity{INT_MIN};
     int Temperature{INT_MIN};
     int fan_speed{INT_MIN};
-    QueueHandle_t setting_queue{nullptr};
+    int co2_level_from_network{INT_MIN};
+    EventGroupHandle_t co2_event_group{};
+    char wifi_scan_result[10][64];
+    int wifi_ssid_index{0};
 };
 
 
