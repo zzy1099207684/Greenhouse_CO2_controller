@@ -78,6 +78,7 @@ void thing_speak_service::upload_data_to_thing_speak(TimerHandle_t xTimer) {
     int field_2 = ts->get_Relative_humidity();
     int field_3 = ts->get_Temperature();
     int field_4 = ts->get_fan_speed();
+    int field_5 = ts->get_co2_level_from_network();
 
     char params[64] = {};
     if (field_1 != INT_MIN) {
@@ -91,6 +92,9 @@ void thing_speak_service::upload_data_to_thing_speak(TimerHandle_t xTimer) {
     }
     if (field_4 != INT_MIN) {
         sprintf(params + strlen(params), "field4=%d", field_4);
+    }
+    if (field_5 != INT_MIN) {
+        sprintf(params + strlen(params), "field5=%d", field_5);
     }
     if (strlen(params) > 0 && params[strlen(params) - 1] == '&') {
         params[strlen(params) - 1] = '\0';

@@ -54,6 +54,7 @@ public:
     int get_Relative_humidity() const { return Relative_humidity; }
     int get_Temperature() const { return Temperature; }
     int get_fan_speed() const { return fan_speed; }
+    int get_co2_level_from_network() const { return co2_level_from_network; }
 
     // data setters
     void set_CO2_level(const int v) { CO2_level = v; }
@@ -61,7 +62,6 @@ public:
     void set_Temperature(const int v) { Temperature = v; }
     void set_fan_speed(const int v) { fan_speed = v; }
     void set_co2_level_from_network(const int v) { co2_level_from_network = v; }
-    int get_co2_level_from_network() const { return co2_level_from_network; }
 
     // string getters
     char *get_response() { return response; }
