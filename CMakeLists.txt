@@ -59,8 +59,23 @@ target_include_directories(${PROJECT_NAME}_lib PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/ipstack
 )
 
-# Link libraries that the library itself needs
-target_link_libraries(${PROJECT_NAME}_lib
+target_include_directories(${PROJECT_NAME} PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/modbus
+        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/i2c
+        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/display
+        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/uart
+        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/ipstack
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/network
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Tools
+)
+
+# Create map/bin/hex/uf2 files
+pico_add_extra_outputs(${PROJECT_NAME})
+
+# Link to pico_stdlib (gpio, time, etc. functions)
+target_link_libraries(${PROJECT_NAME}
         pico_stdlib
         hardware_pwm
         hardware_gpio
@@ -68,6 +83,11 @@ target_link_libraries(${PROJECT_NAME}_lib
         hardware_i2c
         FreeRTOS-Kernel
         FreeRTOS-Kernel-Heap4
+        pico_cyw43_arch_lwip_sys_freertos
+        pico_mbedtls
+        pico_lwip_mbedtls
+        pico_lwip
+
 )
 
 # Now create the main executable with just the main.cpp
