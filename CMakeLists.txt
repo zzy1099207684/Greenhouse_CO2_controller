@@ -35,7 +35,6 @@ add_executable(${PROJECT_NAME}
         src/network/entry/thing_speak.h
         src/network/service/thing_speak_service.cpp
         src/network/service/thing_speak_service.h
-        src/network/entry/thing_speak.h
         src/network/Tools/json/Json_handler.cpp
         src/network/Tools/json/Json_handler.h
         src/network/Tools/json/core_json.c
