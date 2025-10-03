@@ -24,52 +24,27 @@ add_compile_options(-Wall
         -Wno-maybe-uninitialized
 )
 
-# Tell CMake where to find the executable source file
-add_executable(${PROJECT_NAME}
-        src/main.cpp
-        rp2040-freertos/src/ipstack/IPStack.h
-        rp2040-freertos/src/ipstack/mbedtls_config.h
-        rp2040-freertos/src/ipstack/picow_tls_client.c
-        rp2040-freertos/src/ipstack/tls_common.c
-        rp2040-freertos/src/FreeRTOSConfig.h
-        src/network/entry/thing_speak.h
-        src/network/service/thing_speak_service.cpp
-        src/network/service/thing_speak_service.h
+
+# build a library from the source files
+add_library(${PROJECT_NAME}_library
         src/network/Tools/json/Json_handler.cpp
         src/network/Tools/json/Json_handler.h
         src/network/Tools/json/core_json.c
+        src/network/entry/thing_speak.h
+        src/network/service/thing_speak_service.cpp
+        src/network/service/thing_speak_service.h
 
-)
-target_compile_definitions(${PROJECT_NAME} PRIVATE MBEDTLS_PLATFORM_MS_TIME_ALT)
-include_directories(
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/ipstack
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/modbus
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/i2c
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/display
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/uart
-)
-
-target_include_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/ipstack
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/modbus
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/i2c
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/display
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/uart
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/network
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/Tools
-
+        rp2040-freertos/src/ipstack/IPStack.h
+        rp2040-freertos/src/ipstack/mbedtls_config.h
+        rp2040-freertos/src/ipstack/lwipopts_tls.h
+        rp2040-freertos/src/ipstack/lwipopts.h
+        rp2040-freertos/src/ipstack/tls_common.c
+        rp2040-freertos/src/FreeRTOSConfig.h
 
 )
 
-# Create map/bin/hex/uf2 files
-pico_add_extra_outputs(${PROJECT_NAME})
-
-# Link to pico_stdlib (gpio, time, etc. functions)
-target_link_libraries(${PROJECT_NAME}
+# link library with its dependencies
+target_link_libraries(${PROJECT_NAME}_library
         pico_stdlib
         hardware_pwm
         hardware_gpio
@@ -83,6 +58,35 @@ target_link_libraries(${PROJECT_NAME}
         pico_lwip
 
 )
+
+
+# tell CMake where to find the header files
+target_include_directories(${PROJECT_NAME}_library PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/modbus
+        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/i2c
+        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/display
+        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/uart
+        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/ipstack
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/network
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/Tools
+)
+
+
+#
+add_executable(${PROJECT_NAME}
+        src/main.cpp
+)
+
+# link the executable with the library
+target_link_libraries(${PROJECT_NAME}
+        ${PROJECT_NAME}_library
+)
+
+
+# Create map/bin/hex/uf2 files
+pico_add_extra_outputs(${PROJECT_NAME})
 
 # Disable usb output, enable uart output
 pico_enable_stdio_usb(${PROJECT_NAME} 0)
