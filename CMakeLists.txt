@@ -45,6 +45,22 @@ add_library(${PROJECT_NAME}_lib
         # Include the mutex wrapper
         rp2040-freertos/src/Fmutex.cpp
         rp2040-freertos/src/Fmutex.h
+
+        ##################network############################
+        src/network/Tools/json/Json_handler.cpp
+        src/network/Tools/json/Json_handler.h
+        src/network/Tools/json/core_json.c
+        src/network/entry/thing_speak.h
+        src/network/service/thing_speak_service.cpp
+        src/network/service/thing_speak_service.h
+
+        rp2040-freertos/src/ipstack/IPStack.h
+        rp2040-freertos/src/ipstack/mbedtls_config.h
+        rp2040-freertos/src/ipstack/lwipopts_tls.h
+        rp2040-freertos/src/ipstack/lwipopts.h
+        rp2040-freertos/src/ipstack/tls_common.c
+        rp2040-freertos/src/FreeRTOSConfig.h
+        ##################network############################
 )
 
 # Set include directories for the library
@@ -57,25 +73,12 @@ target_include_directories(${PROJECT_NAME}_lib PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/display
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/uart
         ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/ipstack
-)
-
-target_include_directories(${PROJECT_NAME} PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/modbus
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/i2c
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/display
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/uart
-        ${CMAKE_CURRENT_SOURCE_DIR}/rp2040-freertos/src/ipstack
         ${CMAKE_CURRENT_SOURCE_DIR}/src/network
         ${CMAKE_CURRENT_SOURCE_DIR}/src/Tools
 )
 
-# Create map/bin/hex/uf2 files
-pico_add_extra_outputs(${PROJECT_NAME})
-
-# Link to pico_stdlib (gpio, time, etc. functions)
-target_link_libraries(${PROJECT_NAME}
+# Link libraries that the library itself needs
+target_link_libraries(${PROJECT_NAME}_lib
         pico_stdlib
         hardware_pwm
         hardware_gpio
@@ -83,11 +86,12 @@ target_link_libraries(${PROJECT_NAME}
         hardware_i2c
         FreeRTOS-Kernel
         FreeRTOS-Kernel-Heap4
+        ##################network############################
         pico_cyw43_arch_lwip_sys_freertos
         pico_mbedtls
         pico_lwip_mbedtls
         pico_lwip
-
+        ##################network############################
 )
 
 # Now create the main executable with just the main.cpp
