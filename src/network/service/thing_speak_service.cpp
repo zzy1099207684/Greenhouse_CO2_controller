@@ -61,7 +61,7 @@ void thing_speak_service::deal_SETTING_CO2_data(void *param) {
 
     handler.get_value_from_key(ts->get_response(), "feeds");
     char *value = handler.get_final_result();
-    handler.get_value_from_key(value, "field1");
+    handler.get_value_from_key(value, "field5");
     value = handler.get_final_result();
     if (strcmp(value, "") != 0) {
         const int field_5 = atoi(value);
