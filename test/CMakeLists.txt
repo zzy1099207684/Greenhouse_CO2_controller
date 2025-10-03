@@ -6,7 +6,7 @@ set(TEST_SOURCES
         eeprom_test.cpp
         humidity_and_temp_test.cpp
         pressure_test.cpp
-         thingspeak_test.cpp
+        thingspeak_test.cpp
 )
 
 foreach (TEST_SOURCE ${TEST_SOURCES})
