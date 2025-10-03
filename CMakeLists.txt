@@ -27,7 +27,15 @@ add_compile_options(-Wall
 # Tell CMake where to find the executable source file
 add_executable(${PROJECT_NAME}
         src/main.cpp
+        src/ui/ui.cpp
+        rp2040-freertos/src/i2c/PicoI2C.cpp
+        rp2040-freertos/src/display/ssd1306os.cpp
+        rp2040-freertos/src/display/mono_vlsb.cpp
+        rp2040-freertos/src/display/framebuf.cpp
+        rp2040-freertos/src/Fmutex.cpp
 )
+
+
 
 include_directories(
         ${CMAKE_CURRENT_SOURCE_DIR}/src
