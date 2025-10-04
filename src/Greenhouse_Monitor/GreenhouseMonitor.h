@@ -59,6 +59,9 @@ private:
     void network_connection();
     static void network_connection_task(void *pvParameters);
 
+    void network_init() const;
+    static void network_init_task(void *pvParameters);
+
 
     //
     // static void monitor_task(void* pvParameters);

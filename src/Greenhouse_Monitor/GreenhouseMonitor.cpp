@@ -4,25 +4,31 @@
 
 #include "GreenhouseMonitor.h"
 
-GreenhouseMonitor::GreenhouseMonitor(HumidityTempSensor &humidityTempSensor, thing_speak& ts)
-    :humidityTempSensor(humidityTempSensor), ts(ts){
+GreenhouseMonitor::GreenhouseMonitor(HumidityTempSensor &humidityTempSensor, thing_speak& ts, thing_speak_service &ts_service)
+    :humidityTempSensor(humidityTempSensor), ts(ts), ts_service(ts_service){
     monitor_event_group = nullptr;
 }
 
+void GreenhouseMonitor::network_init() const {
+    printf("wifi_init start\n");
+    ts_service.network_init(&ts);
+    vTaskDelete(nullptr);
+}
+
+void GreenhouseMonitor::network_init_task(void *pvParameters) {
+    auto* monitor = static_cast<GreenhouseMonitor*>(pvParameters);
+    monitor->network_init();
+}
+
+
+
 void GreenhouseMonitor::network_connection() {
     while (1) {
-        EventBits_t bits = xEventGroupWaitBits(monitor_event_group,
+        EventBits_t bits = xEventGroupWaitBits(ts.get_co2_wifi_scan_event_group(),
         UI_GET_NETWORK|UI_CONNECT_NETWORK,
-        true, false, portMAX_DELAY);
+        true, false, portMAX_DELAY);;
         if (bits & UI_GET_NETWORK) {
-            thing_speak_service::scan_wifi_ssid_arr(ts);
-            auto ssids = ts.get_wifi_scan_result();
-            // just for test
-            for (int i = 0; i < 9; i++) {
-                if (ssids[i][0] != '\0') {
-                    printf("%s\n", ssids[i]);
-                }
-            }
+            ts_service.scan_wifi_ssid_arr(&ts);
         }
         //if (bits & UI_CONNECT_NETWORK) {
         //set ssid, set password, save to eeprom, connect wifi
@@ -70,8 +76,9 @@ void GreenhouseMonitor::sensor_timer_start() {
 
 void GreenhouseMonitor::init() {
     monitor_event_group = xEventGroupCreate();
-    thing_speak_service::wifi_init();
-    xTaskCreate(&network_connection_task, "network_connection_task", 2048, nullptr, , nullptr);
+    ts.set_co2_wifi_scan_event_group(monitor_event_group);
+    xTaskCreate(network_init_task, "network_init_task", 256, this, tskIDLE_PRIORITY+1, nullptr);
+    xTaskCreate(thing_speak_service::start, "thing_speak_service_start", 256, &ts, tskIDLE_PRIORITY + 1, nullptr);
     sensor_timer_start();
     /*
      * TODO:
