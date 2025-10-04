@@ -10,6 +10,7 @@ set(TEST_SOURCES
         fan_controller_test.cpp
         co2_sensor_test.cpp
         valve_test.cpp
+        co2_controller_test.cpp
 )
 
 foreach (TEST_SOURCE ${TEST_SOURCES})
