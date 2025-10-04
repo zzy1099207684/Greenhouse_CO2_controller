@@ -28,11 +28,17 @@ add_compile_options(-Wall
 add_executable(${PROJECT_NAME}
         src/main.cpp
         src/ui/ui.cpp
+        src/ui/ui.h
         rp2040-freertos/src/i2c/PicoI2C.cpp
+        rp2040-freertos/src/i2c/PicoI2C.h
         rp2040-freertos/src/display/ssd1306os.cpp
+        rp2040-freertos/src/display/ssd1306os.h
         rp2040-freertos/src/display/mono_vlsb.cpp
+        rp2040-freertos/src/display/mono_vlsb.h
         rp2040-freertos/src/display/framebuf.cpp
+        rp2040-freertos/src/display/framebuf.h
         rp2040-freertos/src/Fmutex.cpp
+        rp2040-freertos/src/Fmutex.h
 )
 
 

@@ -48,7 +48,7 @@ struct gpioEvent{
 
 class UI_control {
 public:
-  UI_control(const std::shared_ptr<PicoI2C> &i2cbus);
+  UI_control(const std::shared_ptr<PicoI2C> &i2cbus, EventGroupHandle_t group);
   static void gpio_callback(uint gpio, uint32_t events);
   void init();
 
@@ -60,6 +60,7 @@ public:
   void set_Relative_humidity(float Relative_humidity);
   void set_Temperature(float Temperature);
   void set_fan_speed(int Fan_speed);
+  void set_ssid_list(const char* list[]);
 
   void display_main();
   void display_menu();
@@ -81,29 +82,32 @@ private:
   CharSet char_set;
   gpioEvent gpio_event;
 
-  int menu_index;
-  uint16_t target_CO2;
+  int menu_index=0;
+  int16_t target_CO2=0;
 
   //Sensor values
-  uint16_t CO2_level;
-  float Relative_humidity;
-  float Temperature;
-  int fan_status;
+  uint16_t CO2_level=0;
+  float Relative_humidity=0.0;
+  float Temperature=0.0;
+  int fan_status=0;
 
   //Network info
   char ssid[64];
   char password[64];
-  int network_cursor;
-  bool editing_ssid;
-  int ssid_list_index;
+  int network_cursor=0;
+  bool editing_ssid=true;
+  int ssid_list_index=0;
 
   char alphabet_lower[27];
   char alphabet_upper[27];
   char alphabet_symbols[26];
   char alphabet_digits[11];
+  char ssid_list[10][64];
+  int ssid_list_count;
+  bool needs_update = true;
 
   QueueHandle_t input_queue;
-
+  EventGroupHandle_t event_group;
   TaskHandle_t task_handle;
   ssd1306os display;
 
