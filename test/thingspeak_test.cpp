@@ -10,41 +10,47 @@
 #include "network/entry/thing_speak.h"
 #include "network/service/thing_speak_service.h"
 
+#define NETWORK_SET_CO2 (1<<4) //co2 setting from network
+#define WIFI_INIT (1 << 5) // wifi_init_success
+#define WIFI_SCAN_DONE (1 << 6) // wifi_scan_done
+
 extern "C" {
 uint32_t read_runtime_ctr(void) {
     return timer_hw->timerawl;
 }
 }
 typedef struct {
-    thing_speak ts;
-    thing_speak_service ts_service;
+    thing_speak *ts;
+    thing_speak_service *ts_service;
 } TestStruct;
 
 
 void wifi_init(void *param) {
-    TestStruct *ts_struct = static_cast<TestStruct *>(param);
+    auto *ts_struct = static_cast<TestStruct *>(param);
+    auto *ts = ts_struct->ts;
+    auto *ts_service = ts_struct->ts_service;
     printf("wifi_init start\n");
-    ts_struct->ts_service.wifi_init(&ts_struct->ts);
-    // thing_speak_service::wifi_init(param);
+    ts_service->network_init(ts);
     vTaskDelete(nullptr); // delete self task
 }
 
 // controller scan wifi ssid task example
 void controller_part_scan_wifi(void *param) {
-    TestStruct *ts_struct = static_cast<TestStruct *>(param);
+    auto *ts_struct = static_cast<TestStruct *>(param);
+    auto *ts = ts_struct->ts;
+    auto *ts_service = ts_struct->ts_service;
     while(1) {
         printf("controller scan wifi start\n");
-        auto *ts = static_cast<thing_speak *>(param);
-        EventBits_t wifi_init = xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(), WIFI_INIT_BIT, pdFALSE, pdTRUE,
+        auto *ts = ts_struct->ts;
+        EventBits_t wifi_init = xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(), WIFI_INIT, pdFALSE, pdTRUE,
                                                     portMAX_DELAY); // wait for wifi init success
-        if (wifi_init & WIFI_INIT_BIT) {
-            // thing_speak_service::scan_wifi_ssid_arr(ts); // start scan wifi ssid
-            ts_struct->ts_service.scan_wifi_ssid_arr(&ts_struct->ts);
+        if (wifi_init & WIFI_INIT) {
+            ts_service->scan_wifi_ssid_arr(ts);
 
-            EventBits_t wifi_scan_done = xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(), WIFI_SCAN_DONE_BIT,
+            EventBits_t wifi_scan_done = xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(), WIFI_INIT,
                                                              pdTRUE, pdTRUE,
                                                              portMAX_DELAY);
-            if (wifi_scan_done & WIFI_SCAN_DONE_BIT) {
+            if (wifi_scan_done & WIFI_SCAN_DONE) {
                 // UI get ssid array
                 auto ssids = ts->get_wifi_scan_result(); // get wifi ssid array
                 // just for test
@@ -65,23 +71,25 @@ int main() {
     stdio_init_all();
 
     thing_speak ts;
-    thing_speak_service ts_service;
-    TestStruct ts_struct{ts, ts_service};
-
-
     EventGroupHandle_t wifi_init_success_group = xEventGroupCreate();
-    ts.set_co2_wifi_scan_event_group(wifi_init_success_group); // set event group
+    ts.set_co2_wifi_scan_event_group(wifi_init_success_group);
+    thing_speak_service ts_service;
+    TestStruct ts_struct{&ts, &ts_service};
+
+
+    // set event group
 
     xTaskCreate(wifi_init, "wifi_init", 256, &ts_struct, 1, nullptr); // create wifi init task
 
     // controller part scan wifi ssid task example
-    xTaskCreate(controller_part_scan_wifi, "controller_part_scan_wifi", 256, &ts_struct, 1, nullptr);
+    // xTaskCreate(controller_part_scan_wifi, "controller_part_scan_wifi", 256, &ts_struct, 1, nullptr);
 
     // set wifi ssid and pwd
     ts.set_ssid("Redmi_138D");
     ts.set_pwd("zzyzmy20272025888");
 
-    // ts_service.start(&ts); // start thing speak service task
+
+    xTaskCreate(thing_speak_service::start, "timer_start", 256, &ts, 1, nullptr);
 
     vTaskStartScheduler();
     return 0;

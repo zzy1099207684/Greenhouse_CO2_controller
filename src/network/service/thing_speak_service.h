@@ -18,9 +18,10 @@ public:
     static void upload_data_to_thing_speak(TimerHandle_t xTimer);
     static void wifi_connect(void *param);
     static void request_HTTPS(void *param);
-    void start(void *param);
+
+    static void start(void *param);
     void scan_wifi_ssid_arr(void *param);
-    static void wifi_init(void *param);
+    void network_init(void *param);
 };
 
 

@@ -9,19 +9,13 @@
 
 #include "FreeRTOS.h"
 #include <cstring>
-#include "queue.h"
 #include <climits>
-#include <cyw43.h>
-#include <cyw43_ll.h>
-#include <pico/cyw43_arch.h>
-
-#include "semphr.h"
 #include "pico/util/datetime.h"
 #include "lwip/apps/sntp.h"
 
-#define WIFI_INIT_BIT (1 << 0) // wifi_init_success bit
-#define WIFI_SCAN_DONE_BIT (1 << 1) // wifi_scan_done bit
-#define NETWORK_SET_CO2_BIT (1<<3) // co2_event_group
+#define NETWORK_SET_CO2 (1<<4) //co2 setting from network
+#define WIFI_INIT (1 << 5) // wifi_init_success
+#define WIFI_SCAN_DONE (1 << 6) // wifi_scan_done
 
 
 #define WRITE_API_KEY "3O010WOMXCBHN887"

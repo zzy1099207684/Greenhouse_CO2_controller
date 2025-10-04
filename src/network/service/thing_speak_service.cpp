@@ -72,7 +72,7 @@ void thing_speak_service::deal_SETTING_CO2_data(void *param) {
         if(field_5 != ts->get_co2_level_from_network()) {
             printf("SETTING CO2 level from thing speak: %d\n", field_5);
             ts->set_co2_level_from_network(field_5);
-            xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), NETWORK_SET_CO2_BIT); // set co2 level change bit
+            xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), NETWORK_SET_CO2); // set co2 level change bit
         }
     }
 }
@@ -198,11 +198,11 @@ void thing_speak_service::scan_wifi_ssid_arr(void *param) {
     while (cyw43_wifi_scan_active(&cyw43_state)) {
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
-    xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_SCAN_DONE_BIT);
+    xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_SCAN_DONE);
     printf("Scan done.\n");
 }
 
-void thing_speak_service::wifi_init(void *param) {
+void thing_speak_service::network_init(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
     printf("WiFi init start\n");
     if (cyw43_arch_init_with_country(CYW43_COUNTRY_WORLDWIDE) != 0) {
@@ -210,17 +210,18 @@ void thing_speak_service::wifi_init(void *param) {
         return;
     }
     cyw43_arch_enable_sta_mode();
-    xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_INIT_BIT); // set wifi init success bit
+    xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_INIT); // set wifi init success bit
     printf("WiFi init success\n");
 }
 
 
 void thing_speak_service::start(void *param) {
+    auto *ts = static_cast<thing_speak *>(param);
     printf("timer start\n");
-    EventBits_t b = xEventGroupWaitBits(static_cast<thing_speak *>(param)->get_co2_wifi_scan_event_group(),
-                                        WIFI_INIT_BIT, pdFALSE,
+    EventBits_t b = xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
+                                        WIFI_INIT, pdFALSE,
                                         pdTRUE,portMAX_DELAY); // wait for wifi init success
-    if (b & WIFI_INIT_BIT) {
+    if (b & WIFI_INIT) {
         wifi_connect(param);
         TimerHandle_t get_Setting_CO2_data = xTimerCreate("get_SETTING_CO2_data",
                                                           pdMS_TO_TICKS(5000), // 5s
