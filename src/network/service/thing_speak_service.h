@@ -20,11 +20,7 @@ public:
     static void request_HTTPS(void *param);
     void start(void *param);
     void scan_wifi_ssid_arr(void *param);
-    //static void wifi_init(void *param);
     static void wifi_init(void *param);
-
-    thing_speak_service() = default;
-
 };
 
 
