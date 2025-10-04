@@ -112,7 +112,7 @@ void UI_control::display_main(){
   char buff[32];
   sprintf(buff,"CO2:%d",CO2_level);
   display.text(buff, 0, 0);
-  sprintf(buff,"Relative humidity: %.1f",Relative_humidity);
+  sprintf(buff,"Humidity: %.1f",Relative_humidity);
   display.text(buff, 0, 10);
   sprintf(buff,"Temperature: %.1f",Temperature);
   display.text(buff, 0, 20);
