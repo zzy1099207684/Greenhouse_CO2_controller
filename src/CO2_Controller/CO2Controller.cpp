@@ -147,6 +147,7 @@ void CO2Controller::controlTask(void* pvParameters)
                 self->fan.setSpeed(speed);
                 vTaskDelay(pdMS_TO_TICKS(1));
             }
+            self->fan.setSpeed(0); // turn off fan when back to target
         }
     }
 }
