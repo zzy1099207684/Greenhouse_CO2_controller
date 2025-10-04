@@ -61,6 +61,7 @@ add_library(${PROJECT_NAME}_lib
         src/network/Tools/json/Json_handler.cpp
         src/network/Tools/json/Json_handler.h
         src/network/Tools/json/core_json.c
+        src/network/Tools/tls_common_patched.c
         src/network/entry/thing_speak.h
         src/network/service/thing_speak_service.cpp
         src/network/service/thing_speak_service.h
@@ -69,7 +70,6 @@ add_library(${PROJECT_NAME}_lib
         rp2040-freertos/src/ipstack/mbedtls_config.h
         rp2040-freertos/src/ipstack/lwipopts_tls.h
         rp2040-freertos/src/ipstack/lwipopts.h
-        rp2040-freertos/src/ipstack/tls_common.c
         rp2040-freertos/src/FreeRTOSConfig.h
         ##################network############################
         # Debug
@@ -105,6 +105,11 @@ target_link_libraries(${PROJECT_NAME}_lib
         pico_lwip_mbedtls
         pico_lwip
         ##################network############################
+)
+
+target_compile_definitions(${PROJECT_NAME}_lib PUBLIC
+        NO_SYS=0            # set to 0 because we want to use lwIP with an RTOS
+        PICO_CYW43_ARCH_DEFAULT_COUNTRY_CODE=CYW43_COUNTRY_FINLAND
 )
 
 # Now create the main executable with just the main.cpp
