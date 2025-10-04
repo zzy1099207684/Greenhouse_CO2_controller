@@ -232,3 +232,22 @@ void thing_speak_service::start(void *param) {
         vTaskDelete(nullptr); // delete self task
     }
 }
+
+// void thing_speak_service::start() {
+//     printf("timer start\n");
+//     TimerHandle_t get_Setting_CO2_data = xTimerCreate("get_SETTING_CO2_data",
+//                                                           pdMS_TO_TICKS(5000), // 5s
+//                                                           pdTRUE, // period
+//                                                           this,
+//                                                           get_SETTING_CO2_data);
+//     xTimerStart(get_Setting_CO2_data, 0);
+//
+//
+//     TimerHandle_t upload_data_to_ts = xTimerCreate("upload_data_to_thing_speak",
+//                                                        pdMS_TO_TICKS(15000), // 15s
+//                                                        pdTRUE, // period
+//                                                        this,
+//                                                        upload_data_to_thing_speak);
+//     xTimerStart(upload_data_to_ts, 0);
+//     vTaskDelete(nullptr); // delete self task
+// }

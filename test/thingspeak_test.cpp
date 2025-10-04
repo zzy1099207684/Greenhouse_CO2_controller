@@ -7,8 +7,8 @@
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 #include "task.h"
-#include "entry/thing_speak.h"
-#include "service/thing_speak_service.h"
+#include "network/entry/thing_speak.h"
+#include "network/service/thing_speak_service.h"
 
 extern "C" {
 uint32_t read_runtime_ctr(void) {

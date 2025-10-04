@@ -11,6 +11,10 @@
 #include <cstring>
 #include "queue.h"
 #include <climits>
+#include <cyw43.h>
+#include <cyw43_ll.h>
+#include <pico/cyw43_arch.h>
+
 #include "semphr.h"
 #include "pico/util/datetime.h"
 #include "lwip/apps/sntp.h"

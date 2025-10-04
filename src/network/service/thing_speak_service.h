@@ -19,6 +19,7 @@ public:
     static void request_HTTPS(void *param);
     static void start(void *param);
     static void scan_wifi_ssid_arr(void *param);
+    //static void wifi_init(void *param);
     static void wifi_init(void *param);
 
 };

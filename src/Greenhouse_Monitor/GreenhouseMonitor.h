@@ -12,6 +12,8 @@
 #include "EEPROM/EEPROM.h"
 #include "Environment_Sensor/HumidityTempSensor.h"
 //#include "Environment_Sensor/PressureSensor.h"
+#include "network/entry/thing_speak.h"
+#include "network/service/thing_speak_service.h"
 
 #define UI_SET_CO2 (1<<0) //co2 setting ready from ui
 #define UI_GET_NETWORK (1<<1) //ui needs ssid list
@@ -30,8 +32,8 @@
 class GreenhouseMonitor {
 private:
     // Co2Controller& co2_controller;
-    // UI& ui;
-    // thing_speak& ts;
+    //UI& ui;
+    thing_speak ts;
     HumidityTempSensor& humidityTempSensor;
     //PressureSensor& pressureSensor;
     //EEPROM& eeprom;
@@ -47,11 +49,14 @@ private:
     TimerHandle_t sensor_timer_handle = nullptr;
     static constexpr uint32_t INTERVAL_MS = 1000;
 
-    //EventGroupHandle_t monitor_event_group;
+    static EventGroupHandle_t monitor_event_group;
 
     static void sensor_timer_callback(TimerHandle_t xTimer);
     void read_sensor_data();
     void sensor_timer_start();
+
+    static void network_connection(void *pvParameters);
+    // static void network_connection_task(void *pvParameters);
 
 
     //
@@ -69,7 +74,7 @@ private:
 
 
 public:
-    GreenhouseMonitor(HumidityTempSensor& humidityTempSensor);
+    GreenhouseMonitor(HumidityTempSensor& humidityTempSensor, thing_speak& ts);
     ~GreenhouseMonitor();
     void init();
 

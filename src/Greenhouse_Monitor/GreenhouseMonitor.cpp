@@ -4,10 +4,38 @@
 
 #include "GreenhouseMonitor.h"
 
-GreenhouseMonitor::GreenhouseMonitor(HumidityTempSensor &humidityTempSensor)
-    :humidityTempSensor(humidityTempSensor){
-
+GreenhouseMonitor::GreenhouseMonitor(HumidityTempSensor &humidityTempSensor, thing_speak& ts)
+    :humidityTempSensor(humidityTempSensor), ts(ts){
+    monitor_event_group = nullptr;
 }
+
+void GreenhouseMonitor::network_connection(void *pvParameters) {
+    auto *ts = static_cast<thing_speak *>(pvParameters);
+    while (1) {
+        EventBits_t bits = xEventGroupWaitBits(monitor_event_group,
+        UI_GET_NETWORK|UI_CONNECT_NETWORK,
+        true, false, portMAX_DELAY);
+        if (bits & UI_GET_NETWORK) {
+            thing_speak_service::scan_wifi_ssid_arr(ts);
+            auto ssids = ts->get_wifi_scan_result();
+            // just for test
+            for (int i = 0; i < 9; i++) {
+                if (ssids[i][0] != '\0') {
+                    printf("%s\n", ssids[i]);
+                }
+            }
+        }
+        //if (bits & UI_CONNECT_NETWORK) {
+        //set ssid, set password, save to eeprom, connect wifi
+        //}
+    }
+}
+
+// void GreenhouseMonitor::network_connection_task(void *pvParameters) {
+//     auto* monitor = static_cast<GreenhouseMonitor*>(pvParameters);
+//     monitor->network_connection();
+// }
+
 
 void GreenhouseMonitor::sensor_timer_callback(TimerHandle_t xTimer) {
     auto* monitor = static_cast<GreenhouseMonitor*>(pvTimerGetTimerID(xTimer));
@@ -41,6 +69,10 @@ void GreenhouseMonitor::sensor_timer_start() {
 }
 
 void GreenhouseMonitor::init() {
+    //get ssid pwd from eeprom
+    monitor_event_group = xEventGroupCreate();
+    //xTaskCreate(wifi_init, "wifi_init", 256, &ts, 1, nullptr);
+    xTaskCreate(network_connection, "network_connection", 256, &ts, tskIDLE_PRIORITY+1, nullptr);
     sensor_timer_start();
     /*
      * TODO:
