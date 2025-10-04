@@ -82,14 +82,14 @@ int main() {
     xTaskCreate(wifi_init, "wifi_init", 256, &ts_struct, 1, nullptr); // create wifi init task
 
     // controller part scan wifi ssid task example
-    // xTaskCreate(controller_part_scan_wifi, "controller_part_scan_wifi", 256, &ts_struct, 1, nullptr);
+    xTaskCreate(controller_part_scan_wifi, "controller_part_scan_wifi", 256, &ts_struct, 1, nullptr);
 
     // set wifi ssid and pwd
     ts.set_ssid("Redmi_138D");
     ts.set_pwd("zzyzmy20272025888");
 
 
-    xTaskCreate(thing_speak_service::start, "timer_start", 256, &ts, 1, nullptr);
+    // xTaskCreate(thing_speak_service::start, "timer_start", 256, &ts, 1, nullptr);
 
     vTaskStartScheduler();
     return 0;
