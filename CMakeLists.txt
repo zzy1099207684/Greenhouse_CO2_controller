@@ -43,17 +43,16 @@ add_library(${PROJECT_NAME}_lib
         src/CO2_Controller/CO2Valve.h
         src/CO2_Controller/CO2Controller.cpp
         src/CO2_Controller/CO2Controller.h
-        src/Modbus/SafeModbusClient.cpp
-        src/Modbus/SafeModbusClient.h
-        src/Modbus/SafeModbusRegister.cpp
-        src/Modbus/SafeModbusRegister.h
         # Include the I2C driver that EEPROM depends on
         rp2040-freertos/src/i2c/PicoI2C.cpp
         rp2040-freertos/src/i2c/PicoI2C.h
+        # Include the Modbus implementation and related classes
         rp2040-freertos/src/uart/PicoOsUart.cpp
         rp2040-freertos/src/modbus/ModbusClient.cpp
         rp2040-freertos/src/modbus/ModbusRegister.cpp
         rp2040-freertos/src/modbus/nanomodbus.c
+        src/Modbus/SafeModbusClient.cpp
+        src/Modbus/SafeModbusRegister.cpp
         # Include the mutex wrapper
         rp2040-freertos/src/Fmutex.cpp
         rp2040-freertos/src/Fmutex.h
@@ -73,6 +72,8 @@ add_library(${PROJECT_NAME}_lib
         rp2040-freertos/src/ipstack/tls_common.c
         rp2040-freertos/src/FreeRTOSConfig.h
         ##################network############################
+        # Debug
+        src/Utils/Debug.cpp
 )
 
 # Set include directories for the library
