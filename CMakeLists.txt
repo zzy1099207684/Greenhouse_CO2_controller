@@ -35,6 +35,18 @@ add_library(${PROJECT_NAME}_lib
         src/Environment_Sensor/HumidityTempSensor.h
         src/Environment_Sensor/PressureSensor.cpp
         src/Environment_Sensor/PressureSensor.h
+        src/CO2_Controller/CO2Sensor.cpp
+        src/CO2_Controller/CO2Sensor.h
+        src/CO2_Controller/FanController.cpp
+        src/CO2_Controller/FanController.h
+        src/CO2_Controller/CO2Valve.cpp
+        src/CO2_Controller/CO2Valve.h
+        src/CO2_Controller/CO2Controller.cpp
+        src/CO2_Controller/CO2Controller.h
+        src/Modbus/SafeModbusClient.cpp
+        src/Modbus/SafeModbusClient.h
+        src/Modbus/SafeModbusRegister.cpp
+        src/Modbus/SafeModbusRegister.h
         # Include the I2C driver that EEPROM depends on
         rp2040-freertos/src/i2c/PicoI2C.cpp
         rp2040-freertos/src/i2c/PicoI2C.h
