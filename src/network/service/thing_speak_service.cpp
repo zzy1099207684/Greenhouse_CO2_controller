@@ -28,7 +28,7 @@ void get_data(char *param, void *tsp) {
         if (strstr(param, "feeds") != nullptr) {
             char *json = extract_json(param);
             ts->set_response(json);
-            thing_speak_service::deal_SETTING_CO2_data(ts);
+            thing_speak_service::deal_SETTING_CO2_data_wrapper(ts);
         }
     } else {
         int back_res = atoi(param);
@@ -42,6 +42,10 @@ void get_data(char *param, void *tsp) {
         printf("upload failed\n");
     }
 }
+}
+void thing_speak_service::deal_SETTING_CO2_data_wrapper(void *param) {
+    auto *ts = static_cast<thing_speak_service *>(param);
+    ts->deal_SETTING_CO2_data(param);
 }
 
 // timer
@@ -65,8 +69,11 @@ void thing_speak_service::deal_SETTING_CO2_data(void *param) {
     value = handler.get_final_result();
     if (strcmp(value, "") != 0) {
         const int field_5 = atoi(value);
-        ts->set_co2_level_from_network(field_5);
-        xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), NETWORK_SET_CO2_BIT); // set co2 level change bit
+        if(field_5 != ts->get_co2_level_from_network()) {
+            printf("SETTING CO2 level from thing speak: %d\n", field_5);
+            ts->set_co2_level_from_network(field_5);
+            xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), NETWORK_SET_CO2_BIT); // set co2 level change bit
+        }
     }
 }
 
@@ -233,21 +240,3 @@ void thing_speak_service::start(void *param) {
     }
 }
 
-// void thing_speak_service::start() {
-//     printf("timer start\n");
-//     TimerHandle_t get_Setting_CO2_data = xTimerCreate("get_SETTING_CO2_data",
-//                                                           pdMS_TO_TICKS(5000), // 5s
-//                                                           pdTRUE, // period
-//                                                           this,
-//                                                           get_SETTING_CO2_data);
-//     xTimerStart(get_Setting_CO2_data, 0);
-//
-//
-//     TimerHandle_t upload_data_to_ts = xTimerCreate("upload_data_to_thing_speak",
-//                                                        pdMS_TO_TICKS(15000), // 15s
-//                                                        pdTRUE, // period
-//                                                        this,
-//                                                        upload_data_to_thing_speak);
-//     xTimerStart(upload_data_to_ts, 0);
-//     vTaskDelete(nullptr); // delete self task
-// }

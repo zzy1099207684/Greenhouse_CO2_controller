@@ -33,7 +33,8 @@ class GreenhouseMonitor {
 private:
     // Co2Controller& co2_controller;
     //UI& ui;
-    thing_speak ts;
+    thing_speak& ts;
+    thing_speak_service& ts_service;
     HumidityTempSensor& humidityTempSensor;
     //PressureSensor& pressureSensor;
     //EEPROM& eeprom;
@@ -49,14 +50,14 @@ private:
     TimerHandle_t sensor_timer_handle = nullptr;
     static constexpr uint32_t INTERVAL_MS = 1000;
 
-    static EventGroupHandle_t monitor_event_group;
+    EventGroupHandle_t monitor_event_group;
 
     static void sensor_timer_callback(TimerHandle_t xTimer);
     void read_sensor_data();
     void sensor_timer_start();
 
-    static void network_connection(void *pvParameters);
-    // static void network_connection_task(void *pvParameters);
+    void network_connection();
+    static void network_connection_task(void *pvParameters);
 
 
     //
@@ -74,8 +75,10 @@ private:
 
 
 public:
-    GreenhouseMonitor(HumidityTempSensor& humidityTempSensor, thing_speak& ts);
+    GreenhouseMonitor(HumidityTempSensor& humidityTempSensor, thing_speak& ts, thing_speak_service& ts_service);
     ~GreenhouseMonitor();
+
+
     void init();
 
 };
