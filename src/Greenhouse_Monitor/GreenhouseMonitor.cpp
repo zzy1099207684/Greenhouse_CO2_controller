@@ -4,18 +4,18 @@
 
 #include "GreenhouseMonitor.h"
 
-GreenhouseMonitor::GreenhouseMonitor(HumidityTempSensor &humidityTempSensor, thing_speak &ts, thing_speak_service &ts_service)
-    :humidityTempSensor(humidityTempSensor), ts(ts), ts_service(ts_service) {
+GreenhouseMonitor::GreenhouseMonitor(HumidityTempSensor &humidityTempSensor, thing_speak& ts)
+    :humidityTempSensor(humidityTempSensor), ts(ts){
     monitor_event_group = nullptr;
 }
 
 void GreenhouseMonitor::network_connection() {
     while (1) {
-        EventBits_t bits = xEventGroupWaitBits(ts.get_co2_wifi_scan_event_group(),
+        EventBits_t bits = xEventGroupWaitBits(monitor_event_group,
         UI_GET_NETWORK|UI_CONNECT_NETWORK,
         true, false, portMAX_DELAY);
         if (bits & UI_GET_NETWORK) {
-            ts_service.scan_wifi_ssid_arr(&ts);
+            thing_speak_service::scan_wifi_ssid_arr(ts);
             auto ssids = ts.get_wifi_scan_result();
             // just for test
             for (int i = 0; i < 9; i++) {
@@ -34,6 +34,7 @@ void GreenhouseMonitor::network_connection_task(void *pvParameters) {
     auto* monitor = static_cast<GreenhouseMonitor*>(pvParameters);
     monitor->network_connection();
 }
+
 
 
 void GreenhouseMonitor::sensor_timer_callback(TimerHandle_t xTimer) {
@@ -68,13 +69,10 @@ void GreenhouseMonitor::sensor_timer_start() {
 }
 
 void GreenhouseMonitor::init() {
-    //get ssid pwd from eeprom
     monitor_event_group = xEventGroupCreate();
-    ts.set_co2_wifi_scan_event_group(monitor_event_group);
-    // xTaskCreate(wifi_init, "wifi_init", 256, &ts, 1, nullptr);
-    xTaskCreate(network_connection_task, "network_connection", 256, this, tskIDLE_PRIORITY+1, nullptr);
+    thing_speak_service::wifi_init();
+    xTaskCreate(&network_connection_task, "network_connection_task", 2048, nullptr, , nullptr);
     sensor_timer_start();
-    ts_service.start(&ts);
     /*
      * TODO:
      * 1. pass event group handle to member classes
