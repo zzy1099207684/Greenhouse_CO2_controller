@@ -4,11 +4,13 @@
 
 #include "HumidityTempSensor.h"
 
+#include <Modbus/SafeModbusClient.h>
+
 #define MODBUS_SERVER_ADDR 241
 #define RH_REGISTER_ADDR 256
 #define TEMP_REGISTER_ADDR 257
 
-HumidityTempSensor::HumidityTempSensor(const std::shared_ptr<ModbusClient>& modbus_client)
+HumidityTempSensor::HumidityTempSensor(const std::shared_ptr<SafeModbusClient>& modbus_client)
     :modbus_client(modbus_client),
       temp_register(modbus_client, MODBUS_SERVER_ADDR, TEMP_REGISTER_ADDR, true),
       humidity_register(modbus_client, MODBUS_SERVER_ADDR, RH_REGISTER_ADDR, true) {

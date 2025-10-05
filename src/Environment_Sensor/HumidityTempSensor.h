@@ -6,12 +6,12 @@
 #define HUMIDITYTEMPSENSOR_H
 
 #include <memory>
-#include "ModbusClient.h"
-#include "ModbusRegister.h"
+#include "Modbus/SafeModbusClient.h"
+#include "Modbus/SafeModbusRegister.h"
 
 class HumidityTempSensor {
 private:
-    std::shared_ptr<ModbusClient> modbus_client;
+    std::shared_ptr<SafeModbusClient> modbus_client;
     ModbusRegister temp_register;
     ModbusRegister humidity_register;
 
@@ -22,7 +22,7 @@ private:
     static constexpr float HUMIDITY_SCALE = 10.0f;
 
 public:
-    explicit HumidityTempSensor(const std::shared_ptr<ModbusClient>& modbus_client);
+    explicit HumidityTempSensor(const std::shared_ptr<SafeModbusClient>& modbus_client);
 
     float readTemperature();
     float readHumidity();
