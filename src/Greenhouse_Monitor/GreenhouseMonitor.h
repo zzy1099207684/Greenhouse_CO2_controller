@@ -33,13 +33,20 @@
 
 class GreenhouseMonitor {
 private:
-    CO2Controller& co2_controller;
-    //UI_control & ui;
+
+    std::shared_ptr<PicoOsUart> uart;
+    std::shared_ptr<SafeModbusClient> modbus_client;
+    std::shared_ptr<PicoI2C> i2c0bus;
+    std::shared_ptr<PicoI2C> i2c1bus;
+
+    CO2Controller co2_controller;
+    UI_control ui;
+
+    HumidityTempSensor humidityTempSensor;
+    //PressureSensor& pressureSensor;
+    EEPROM eeprom;
     thing_speak& ts;
     thing_speak_service& ts_service;
-    HumidityTempSensor& humidityTempSensor;
-    //PressureSensor& pressureSensor;
-    EEPROM& eeprom;
 
     struct {
         int co2Level;
@@ -61,7 +68,7 @@ private:
     void read_sensor_data();
     void sensor_timer_start();
 
-    void network_connection() const;
+    void network_connection();
     static void network_connection_task(void *pvParameters);
 
     void network_init() const;
@@ -73,7 +80,7 @@ private:
 
 
 public:
-    GreenhouseMonitor(CO2Controller& co2_controller, EEPROM& eeprom, HumidityTempSensor& humidityTempSensor, thing_speak& ts, thing_speak_service& ts_service);
+    GreenhouseMonitor(thing_speak& ts, thing_speak_service& ts_service);
     //~GreenhouseMonitor();
 
     void init();

@@ -32,7 +32,7 @@ void test_eeprom_task(void *params) {
     printf("Test 1: CO2 Value Storage\n");
     printf("--------------------------\n");
 
-    uint16_t test_co2_write = 450;  // A typical CO2 reading in ppm
+    int test_co2_write = 450;  // A typical CO2 reading in ppm
     printf("Writing CO2 value: %d ppm\n", test_co2_write);
 
     if (eeprom.writeCO2Value(test_co2_write)) {
@@ -41,7 +41,7 @@ void test_eeprom_task(void *params) {
         // Small delay to ensure write cycle completes
         vTaskDelay(pdMS_TO_TICKS(20));
 
-        uint16_t test_co2_read = 0;
+        int test_co2_read = 0;
         if (eeprom.readCO2Value(test_co2_read)) {
             printf("Read successful! Value: %d ppm\n", test_co2_read);
 
@@ -153,18 +153,18 @@ void test_eeprom_task(void *params) {
     printf("Test 5: CO2 Boundary Values\n");
     printf("---------------------------\n");
 
-    uint16_t boundary_values[] = {0, 1, 255, 256, 10000, 65535};
+    int boundary_values[] = {0, 1, 255, 256, 10000, 65535};
     int num_boundary_tests = sizeof(boundary_values) / sizeof(boundary_values[0]);
     bool all_boundary_passed = true;
 
     for (int i = 0; i < num_boundary_tests; i++) {
-        uint16_t test_value = boundary_values[i];
+        int test_value = boundary_values[i];
         printf("Testing CO2 value: %d\n", test_value);
 
         if (eeprom.writeCO2Value(test_value)) {
             vTaskDelay(pdMS_TO_TICKS(20));
 
-            uint16_t read_value;
+            int read_value;
             if (eeprom.readCO2Value(read_value)) {
                 if (read_value == test_value) {
                     printf("Value %d passed\n", test_value);
@@ -231,7 +231,7 @@ void test_eeprom_task(void *params) {
     // Read multiple times to verify consistency
     for (int i = 0; i < 5; i++) {
         char ssid_check[33];
-        uint16_t co2_check;
+        int co2_check;
 
         if (eeprom.readSSID(ssid_check) && eeprom.readCO2Value(co2_check)) {
             if (strcmp(ssid_check, persist_ssid) != 0 || co2_check != persist_co2) {

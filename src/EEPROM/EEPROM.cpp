@@ -32,6 +32,7 @@ bool EEPROM::writeBytes(const uint16_t address, const uint8_t *data, const uint1
         if (i2c->write(deviceAddr, write_buffer, bytes_to_write + 2) != static_cast<uint>(bytes_to_write + 2)) {
             return false;
         }
+        vTaskDelay(pdMS_TO_TICKS(5));
         // if (isBusy()) {
         //     return false;
         // }
