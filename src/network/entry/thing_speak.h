@@ -113,8 +113,8 @@ private:
     char write_api_key[64]{};
     char read_api_key[64]{};
     int CO2_level{INT_MIN};
-    int Relative_humidity{INT_MIN};
-    int Temperature{INT_MIN};
+    float Relative_humidity{INT_MIN};
+    float Temperature{INT_MIN};
     int fan_speed{INT_MIN};
     int co2_level_from_network{INT_MIN};
     EventGroupHandle_t co2_wifi_scan_event_group{};
