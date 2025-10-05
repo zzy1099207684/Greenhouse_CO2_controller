@@ -1,6 +1,6 @@
 #include <memory>
 #include <PicoI2C.h>
-#include <stdio.h>
+#include <cstdio>
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 #include "FreeRTOS.h"
@@ -18,8 +18,8 @@ extern "C" {
 int main() {
     stdio_init_all();
     EventGroupHandle_t event_group = xEventGroupCreate();
-    auto i2cbus{std::make_shared<PicoI2C>(1, 400000)};
-    UI_control ui(i2cbus, event_group);
+    auto i2c_bus{std::make_shared<PicoI2C>(1, 400000)};
+    UI_control ui(i2c_bus, event_group);
 
     vTaskStartScheduler();
     while(true){};

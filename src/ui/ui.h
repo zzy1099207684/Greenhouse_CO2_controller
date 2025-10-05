@@ -105,12 +105,11 @@ private:
   char ssid_list[10][64];
   int ssid_list_count;
   bool needs_update = true;
-
+  TaskHandle_t task_handle;
+  std::shared_ptr<PicoI2C> i2c_bus;
+  ssd1306os* display;
   QueueHandle_t input_queue;
   EventGroupHandle_t event_group;
-  TaskHandle_t task_handle;
-  ssd1306os display;
-
   static UI_control *instance_ptr;
 };
 

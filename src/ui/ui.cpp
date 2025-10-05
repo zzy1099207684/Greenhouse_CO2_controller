@@ -20,7 +20,7 @@
 
 UI_control* UI_control::instance_ptr = nullptr;
 
-UI_control::UI_control(const std::shared_ptr<PicoI2C> &i2cbus,EventGroupHandle_t group): input_queue(nullptr),task_handle(nullptr), event_group(group), display(i2cbus){
+UI_control::UI_control(const std::shared_ptr<PicoI2C> &i2c_bus,EventGroupHandle_t group): i2c_bus(i2c_bus), display(nullptr), input_queue(nullptr),event_group(group), task_handle(nullptr) {
   init();
 }
 
@@ -85,13 +85,13 @@ void UI_control::init(){
   gpio_set_irq_enabled(BTN2, GPIO_IRQ_EDGE_FALL,true);
   gpio_set_irq_enabled(BTN3, GPIO_IRQ_EDGE_FALL,true);
 
-  xTaskCreate(runner, "UI control", 2048, (void*) this, tskIDLE_PRIORITY + 2, &task_handle);
+  xTaskCreate(runner, "UI control", 512, (void*) this, tskIDLE_PRIORITY + 2, &task_handle);
 }
 
 int UI_control::get_CO2_level(){ return target_CO2;}
 char* UI_control::get_ssid(){ return ssid;}
 char* UI_control::get_password(){ return password;}
-void UI_control::set_CO2_level(uint16_t new_level){ CO2_level = new_level;}
+void UI_control::set_CO2_level(uint16_t new_level){ CO2_level = new_level; target_CO2 = static_cast<int16_t>(new_level);}
 void UI_control::set_Relative_humidity(float new_humidity){ Relative_humidity = new_humidity;}
 void UI_control::set_Temperature(float new_temperature){ Temperature = new_temperature;}
 void UI_control::set_fan_speed(int new_status){ fan_status= new_status;}
@@ -108,56 +108,53 @@ void UI_control::set_ssid_list(const char *list[]) {
 }
 
 void UI_control::display_main(){
-  display.fill(0);
   char buff[32];
   sprintf(buff,"CO2:%d",CO2_level);
-  display.text(buff, 0, 0);
+  display->text(buff, 0, 0);
   sprintf(buff,"Humidity: %.1f",Relative_humidity);
-  display.text(buff, 0, 10);
+  display->text(buff, 0, 10);
   sprintf(buff,"Temperature: %.1f",Temperature);
-  display.text(buff, 0, 20);
+  display->text(buff, 0, 20);
   if(fan_status > 0){
-    display.text("Fan on !!ALARM!!", 0, 30);
+    display->text("Fan on !!ALARM!!", 0, 30);
   } else {
-    display.text("Fan off", 0, 30);
+    display->text("Fan off", 0, 30);
   }
-  display.text("Button for Menu", 0, 50);
+  display->text("Button for Menu", 0, 50);
 }
 
 void UI_control::display_menu(){
   const char* menu_items[] = {"Set CO2", "Network settings", "Go back"};
-  display.fill(0);
   for (int i = 0; i < 3; i++) {
     if(i == menu_index){
-      display.rect(0, i*10, 128, 8, 1, true);
-      display.text(menu_items[i], 0, i*10, 0);
+      display->rect(0, i*10, 128, 8, 1, true);
+      display->text(menu_items[i], 0, i*10, 0);
     } else {
-      display.text(menu_items[i], 0, i*10, 1);
+      display->text(menu_items[i], 0, i*10, 1);
     }
   }
 }
 
 void UI_control::display_set_co2(){
   char buff[32];
-  display.fill(0);
-  display.text("Set CO2 level:", 0, 0);
+  display->text("Set CO2 level:", 0, 0);
   sprintf(buff, "%d", target_CO2);
-  display.text(buff, 0, 10);
-  display.text("Rotate to change.", 0, 30);
-  display.text("Press to set.",0,40);
+  display->text(buff, 0, 10);
+  display->text("Rot to change.", 0, 30);
+  display->text("Press to set.",0,40);
 }
 
 void UI_control::display_network() {
-  display.fill(0);
-  display.text("Network settings:", 0, 0);
+  display->text("Network settings:", 0, 0);
 
-  display.text("SSID: ",0,10);
-  display.text(ssid,0,20);
+  display->text("SSID: ",0,8);
+  display->text(ssid,0,16);
 
-  display.text("Password: ",0,30);
-  display.text(password,0,40);
+  display->text("Password: ",0,26);
+  display->text(password,0,34);
 
-  display.text("Turn change, Press set.",0,50);
+  display->text("Rot to change.",0,46);
+  display->text("Press to save.",0,54);
 }
 
 void UI_control::handle_menu_event(const gpioEvent &event) {
@@ -286,12 +283,13 @@ void UI_control::handle_network_manual(const gpioEvent &event, char* buffer) {
 }
 
 void UI_control::run() {
+  display = new ssd1306os(i2c_bus);
   gpioEvent event;
   uint32_t last_press[5] = {0}; // ROT_ENCODER, ROT_SW, BTN1, BTN2 & BTN3
   const uint32_t debounce_ms[5] = {50, 250, 250, 250, 250};
 
   display_main();
-  display.show();
+  display->show();
   needs_update=false;
 
   while(true){
@@ -340,13 +338,14 @@ void UI_control::run() {
       }
     }
     if(needs_update) {
+      display->fill(0);
       switch(current_state){
         case UIState::MAIN: display_main(); break;
         case UIState::SETTING_MENU: display_menu(); break;
         case UIState::SET_CO2: display_set_co2(); break;
         case UIState::NETWORK_SETTINGS: display_network(); break;
       }
-      display.show();
+      display->show();
       needs_update = false;
     }
     vTaskDelay(pdMS_TO_TICKS(20));
