@@ -83,13 +83,13 @@ private:
   gpioEvent gpio_event;
 
   int menu_index=0;
-  int16_t target_CO2=0;
+  int co2SetPoint=0;
 
   //Sensor values
-  uint16_t CO2_level=0;
+  int co2_level=0;
   float Relative_humidity=0.0;
   float Temperature=0.0;
-  int fan_status=0;
+  int fan_speed=0;
 
   //Network info
   char ssid[64];

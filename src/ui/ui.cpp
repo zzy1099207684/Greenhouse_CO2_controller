@@ -88,13 +88,13 @@ void UI_control::init(){
   xTaskCreate(runner, "UI control", 512, (void*) this, tskIDLE_PRIORITY + 2, &task_handle);
 }
 
-int UI_control::get_CO2_level(){ return target_CO2;}
+int UI_control::get_CO2_level(){ return co2SetPoint;}
 char* UI_control::get_ssid(){ return ssid;}
 char* UI_control::get_password(){ return password;}
-void UI_control::set_CO2_level(uint16_t new_level){ CO2_level = new_level; target_CO2 = static_cast<int16_t>(new_level);}
+void UI_control::set_CO2_level(uint16_t new_level){ co2_level = new_level; co2SetPoint = new_level;}
 void UI_control::set_Relative_humidity(float new_humidity){ Relative_humidity = new_humidity;}
 void UI_control::set_Temperature(float new_temperature){ Temperature = new_temperature;}
-void UI_control::set_fan_speed(int new_status){ fan_status= new_status;}
+void UI_control::set_fan_speed(int new_status){ fan_speed= new_status;}
 
 void UI_control::set_ssid_list(const char *list[]) {
   for(int i=0; i < 10; i++) {
@@ -109,13 +109,13 @@ void UI_control::set_ssid_list(const char *list[]) {
 
 void UI_control::display_main(){
   char buff[32];
-  sprintf(buff,"CO2:%d",CO2_level);
+  sprintf(buff,"CO2:%d",co2_level);
   display->text(buff, 0, 0);
   sprintf(buff,"Humidity: %.1f",Relative_humidity);
   display->text(buff, 0, 10);
   sprintf(buff,"Temperature: %.1f",Temperature);
   display->text(buff, 0, 20);
-  if(fan_status > 0){
+  if(fan_speed > 0){
     display->text("Fan on !!ALARM!!", 0, 30);
   } else {
     display->text("Fan off", 0, 30);
@@ -138,7 +138,7 @@ void UI_control::display_menu(){
 void UI_control::display_set_co2(){
   char buff[32];
   display->text("Set CO2 level:", 0, 0);
-  sprintf(buff, "%d", target_CO2);
+  sprintf(buff, "%d", co2SetPoint);
   display->text(buff, 0, 10);
   display->text("Rot to change.", 0, 30);
   display->text("Press to set.",0,40);
@@ -185,9 +185,9 @@ void UI_control::handle_menu_event(const gpioEvent &event) {
 
 void UI_control::handle_set_co2_event(const gpioEvent &event) {
   if(event.type == gpioType::ROT_ENCODER){
-    target_CO2 += event.direction;
-    if(target_CO2 < 0) target_CO2 = 0;
-    if(target_CO2 > 1500) target_CO2 = 1500;
+    co2SetPoint += event.direction;
+    if(co2SetPoint < 0) co2SetPoint = 0;
+    if(co2SetPoint > 1500) co2SetPoint = 1500;
     needs_update = true;
   }
 
