@@ -106,19 +106,27 @@ void UI_control::set_ssid_list(const char *list[]) {
     }
   }
 }
+void  UI_control::set_network_status(bool status) {
+  connected_to_network = status;
+}
 
 void UI_control::display_main(){
   char buff[32];
   sprintf(buff,"CO2:%d",co2_level);
   display->text(buff, 0, 0);
   sprintf(buff,"Humidity: %.1f",Relative_humidity);
-  display->text(buff, 0, 10);
+  display->text(buff, 0, 8);
   sprintf(buff,"Temperature: %.1f",Temperature);
-  display->text(buff, 0, 20);
+  display->text(buff, 0, 16);
   if(fan_speed > 0){
-    display->text("Fan on !!ALARM!!", 0, 30);
+    display->text("Fan on !!ALARM!!", 0, 24);
   } else {
-    display->text("Fan off", 0, 30);
+    display->text("Fan off", 0, 24);
+  }
+  if(connected_to_network) {
+    display->text("Network:Online", 0, 32);
+  } else {
+    display->text("Network:Offline", 0, 32);
   }
   display->text("Button for Menu", 0, 50);
 }
@@ -144,6 +152,13 @@ void UI_control::display_set_co2(){
   display->text("Press to set.",0,40);
 }
 
+void UI_control::display_successfull_set_co2() {
+  display->fill(0);
+  display->text("New target CO2",0,20);
+  display->text("set successfully.",0,30);
+  display->show();
+}
+
 void UI_control::display_network() {
   display->text("Network settings:", 0, 0);
 
@@ -155,6 +170,11 @@ void UI_control::display_network() {
 
   display->text("Rot to change.",0,46);
   display->text("Press to save.",0,54);
+}
+void UI_control::display_successfull_set_network() {
+  display->fill(0);
+  display->text("Network info set.",0,30);
+  display->show();
 }
 
 void UI_control::handle_menu_event(const gpioEvent &event) {
@@ -192,6 +212,8 @@ void UI_control::handle_set_co2_event(const gpioEvent &event) {
   }
 
   if(event.type == gpioType::ROT_SWITCH){
+    display_successfull_set_co2();
+    vTaskDelay(pdMS_TO_TICKS(3000));
     current_state = UIState::SETTING_MENU;
     xEventGroupSetBits(event_group, UI_SET_CO2);
     needs_update = true;
@@ -274,9 +296,11 @@ void UI_control::handle_network_manual(const gpioEvent &event, char* buffer) {
       network_cursor = 0;
       password[0] = alphabet_lower[0];
     } else {
-      current_state = UIState::SETTING_MENU;
+      current_state = UIState::MAIN;
       xEventGroupSetBits(event_group,UI_CONNECT_NETWORK);
       xEventGroupClearBits(event_group,UI_SSID_READY);
+      display_successfull_set_network();
+      vTaskDelay(pdMS_TO_TICKS(3000));
     }
     needs_update = true;
   }
@@ -332,7 +356,7 @@ void UI_control::run() {
             break;
             case InputMode::Password:
               handle_network_manual(event,password);
-            break;
+              break;
           }
           break;
       }
