@@ -48,14 +48,14 @@ bool EEPROM::readBytes(const uint16_t address, uint8_t *data, const uint16_t len
     return i2c->transaction(deviceAddr, addr_buffer, 2, data, length) == static_cast<uint>(2 + length);
 }
 
-bool EEPROM::writeCO2Value(const uint16_t co2_value) {
+bool EEPROM::writeCO2Value(const int co2_value) {
     uint8_t data[2];
     data[0] = (co2_value >> 8) & 0xFF;
     data[1] = co2_value & 0xFF;
     return writeBytes(ADDR_CO2, data, 2);
 }
 
-bool EEPROM::readCO2Value(uint16_t &co2_value) const {
+bool EEPROM::readCO2Value(int &co2_value) const {
     uint8_t data[2];
     if (!readBytes(ADDR_CO2, data, 2)) return false;
     co2_value = (data[0] << 8) | data[1];

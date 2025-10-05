@@ -69,7 +69,10 @@ void GreenhouseMonitor::read_sensor_data() {
     ts.set_fan_speed(systemData.fanSpeed);
     ts.set_CO2_level(systemData.co2Level);
 
-    //ui.set.....
+    // ui.set_Temperature(systemData.temperature);
+    // ui.set_Relative_humidity(systemData.humidity);
+    // ui.set_fan_speed(systemData.fanSpeed);
+    // ui.set_CO2_level(systemData.co2Level);
 
 }
 
@@ -93,12 +96,14 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
             UI_SET_CO2 | NETWORK_SET_CO2| CO2_WARNING,
             pdTRUE, pdFALSE, portMAX_DELAY);
         if (bit&UI_SET_CO2) {
-
+            //systemData.co2SetPoint = ui.get_CO2_level();
+            co2_controller.setTargetCO2Level(static_cast<float>(systemData.co2SetPoint));
         }
         if (bit&NETWORK_SET_CO2) {
             systemData.co2SetPoint = ts.get_co2_level_from_network();
             co2_controller.setTargetCO2Level(static_cast<float>(systemData.co2Level));
-            //ui.set()
+            //ui.set_CO2_level(systemData.co2SetPoint);
+            eeprom.writeCO2Value(systemData.co2SetPoint);
         }
         if (bit&CO2_WARNING) {
             printf("warning");
@@ -116,17 +121,21 @@ void GreenhouseMonitor::greenhouse_monitor_run(void *pvParameters) {
 void GreenhouseMonitor::init() {
     // eeprom.readSSID(ssid);
     // eeprom.readPWD(pwd);
-    ts.set_ssid("B38-2G");
-    ts.set_pwd("kisupupu8697");
+    eeprom.readCO2Value(systemData.co2SetPoint);
+    co2_controller.setTargetCO2Level(systemData.co2Level);
+    ts.set_ssid("");
+    ts.set_pwd("");
+
 
     monitor_event_group = xEventGroupCreate();
     ts.set_co2_wifi_scan_event_group(monitor_event_group);
+
 
     xTaskCreate(network_init_task, "network_init_task", 256, this, tskIDLE_PRIORITY+1, nullptr);
     xTaskCreate(thing_speak_service::start, "thing_speak_service_start", 256, &ts, tskIDLE_PRIORITY + 1, nullptr);
     xTaskCreate(network_connection_task, "network_connection_task", 256, this, tskIDLE_PRIORITY + 1, nullptr);
     xTaskCreate(greenhouse_monitor_run, "greenhouse_monitor_run", 1024, this, tskIDLE_PRIORITY + 1, nullptr);
-    //co2_controller.start();
+    co2_controller.start();
     sensor_timer_start();
     /*
      * TODO:

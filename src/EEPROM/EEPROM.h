@@ -35,8 +35,8 @@ private:
 
 public:
     explicit EEPROM(const std::shared_ptr<PicoI2C> &i2c_bus);
-    bool writeCO2Value(uint16_t co2_value);
-    bool readCO2Value(uint16_t& co2_value) const;
+    bool writeCO2Value(int co2_value);
+    bool readCO2Value(int& co2_value) const;
     bool writeSSID(const char* ssid);
     bool writePWD(const char* pwd);
     bool readSSID(char *ssid) const;

@@ -15,6 +15,7 @@
 #include "network/entry/thing_speak.h"
 #include "network/service/thing_speak_service.h"
 #include "CO2_Controller/CO2Controller.h"
+#include "ui/ui.h"
 
 #define UI_SET_CO2 (1<<0) //co2 setting ready from ui
 #define UI_GET_NETWORK (1<<1) //ui needs ssid list
@@ -33,7 +34,7 @@
 class GreenhouseMonitor {
 private:
     CO2Controller& co2_controller;
-    //UI& ui;
+    //UI_control & ui;
     thing_speak& ts;
     thing_speak_service& ts_service;
     HumidityTempSensor& humidityTempSensor;
