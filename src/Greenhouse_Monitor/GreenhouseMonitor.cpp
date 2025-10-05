@@ -37,18 +37,18 @@ void GreenhouseMonitor::network_connection(){
         true, false, portMAX_DELAY);;
         if (bits & UI_GET_NETWORK) {
             ts_service.scan_wifi_ssid_arr(&ts);
-            //get ssid list and give to ui
+            ui.set_ssid_list(reinterpret_cast<const char **>(ts.get_wifi_scan_result()));
             xEventGroupSetBits(monitor_event_group, UI_SSID_READY);
         }
         if (bits & UI_CONNECT_NETWORK) {
         //set ssid, set password, save to eeprom, connect wifi
-            //strcpy(ssid, ui.get_ssid());
-            //strcpy(pwd, ui.get_password());
+            strcpy(ssid, ui.get_ssid());
+            strcpy(pwd, ui.get_password());
             // eeprom.writeSSID(ssid);
             // eeprom.writePWD(pwd);
-            // ts.set_ssid(ssid);
-            // ts.set_pwd(pwd);
-            // thing_speak_service::wifi_connect(&ts);
+            ts.set_ssid(ssid);
+            ts.set_pwd(pwd);
+            thing_speak_service::wifi_connect(&ts);
         }
     }
 }
@@ -58,30 +58,46 @@ void GreenhouseMonitor::network_connection_task(void *pvParameters) {
     monitor->network_connection();
 }
 
+void GreenhouseMonitor::notify_sensors() const {
+    xEventGroupSetBits(monitor_event_group, ENV_SENSOR_TIMER_REACHED);
+}
 
 
 void GreenhouseMonitor::sensor_timer_callback(TimerHandle_t xTimer) {
     auto* monitor = static_cast<GreenhouseMonitor*>(pvTimerGetTimerID(xTimer));
-    monitor->read_sensor_data();
+    monitor->notify_sensors();
 }
 
-void GreenhouseMonitor::read_sensor_data() {
-    systemData.humidity = humidityTempSensor.readHumidity();
-    systemData.temperature = humidityTempSensor.readTemperature();
-    systemData.co2Level = static_cast<int>(co2_controller.getCurrentCO2Level());
-    systemData.fanSpeed = static_cast<int>(co2_controller.getFanSpeed());
+void GreenhouseMonitor::read_sensor_task() {
+    while (1) {
+        EventBits_t bits = xEventGroupWaitBits(monitor_event_group, ENV_SENSOR_TIMER_REACHED, true, true, portMAX_DELAY);
+        if (bits & ENV_SENSOR_TIMER_REACHED) {
+            // systemData.humidity = humidityTempSensor.readHumidity();
+            // vTaskDelay(pdMS_TO_TICKS(50));
+            // systemData.temperature = humidityTempSensor.readTemperature();
+            // vTaskDelay(pdMS_TO_TICKS(50));
+            systemData.co2Level = static_cast<int>(co2_controller.getCurrentCO2Level());
+            systemData.fanSpeed = static_cast<int>(co2_controller.getFanSpeed());
 
-    ts.set_Temperature(systemData.temperature);
-    ts.set_Relative_humidity(systemData.humidity);
-    ts.set_fan_speed(systemData.fanSpeed);
-    ts.set_CO2_level(systemData.co2Level);
+            // ts.set_Temperature(systemData.temperature);
+            // ts.set_Relative_humidity(systemData.humidity);
+            // ts.set_fan_speed(systemData.fanSpeed);
+            // ts.set_CO2_level(systemData.co2Level);
 
-    ui.set_Temperature(systemData.temperature);
-    ui.set_Relative_humidity(systemData.humidity);
-    ui.set_fan_speed(systemData.fanSpeed);
-    ui.set_CO2_level(systemData.co2Level);
+            //ui.set_Temperature(systemData.temperature);
+            //ui.set_Relative_humidity(systemData.humidity);
+            //ui.set_fan_speed(systemData.fanSpeed);
+            //ui.set_CO2_level(systemData.co2Level);
+        }
+    }
 
 }
+
+void GreenhouseMonitor::read_sensor_run(void *pvParameters) {
+    auto* monitor = static_cast<GreenhouseMonitor*>(pvParameters);
+    monitor->read_sensor_task();
+}
+
 
 void GreenhouseMonitor::sensor_timer_start() {
     if (sensor_timer_handle == nullptr) {
@@ -103,13 +119,14 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
             UI_SET_CO2 | NETWORK_SET_CO2| CO2_WARNING,
             pdTRUE, pdFALSE, portMAX_DELAY);
         if (bit&UI_SET_CO2) {
-            //systemData.co2SetPoint = ui.get_CO2_level();
+            systemData.co2SetPoint = ui.get_CO2_level();
             co2_controller.setTargetCO2Level(static_cast<float>(systemData.co2SetPoint));
+            ts.set_co2_level_from_network(systemData.co2SetPoint);
             printf("setting from ui");
         }
         if (bit&NETWORK_SET_CO2) {
             systemData.co2SetPoint = ts.get_co2_level_from_network();
-            co2_controller.setTargetCO2Level(static_cast<float>(systemData.co2Level));
+            co2_controller.setTargetCO2Level(static_cast<float>(systemData.co2SetPoint));
             ui.set_CO2_level(systemData.co2SetPoint);
             //eeprom.writeCO2Value(systemData.co2SetPoint);
         }
@@ -132,16 +149,18 @@ void GreenhouseMonitor::init() {
     // eeprom.writeCO2Value(450);
     // eeprom.readCO2Value(systemData.co2SetPoint);
     //co2_controller.setTargetCO2Level(systemData.co2Level);
-    ts.set_ssid("B38-2G");
-    ts.set_pwd("kisupupu8697");
+    ts.set_ssid("");
+    ts.set_pwd("");
 
 
-    xTaskCreate(network_init_task, "network_init_task", 1024, this, tskIDLE_PRIORITY+2, nullptr);
-    xTaskCreate(thing_speak_service::start, "thing_speak_service_start", 1024, &ts, tskIDLE_PRIORITY + 1, nullptr);
-    xTaskCreate(network_connection_task, "network_connection_task", 1024, this, tskIDLE_PRIORITY + 2, nullptr);
+    xTaskCreate(network_init_task, "network_init_task", 256, this, tskIDLE_PRIORITY+2, nullptr);
+    xTaskCreate(thing_speak_service::start, "thing_speak_service_start", 256, &ts, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(network_connection_task, "network_connection_task", 1024, this, tskIDLE_PRIORITY + 1, nullptr);
     xTaskCreate(greenhouse_monitor_run, "greenhouse_monitor_run", 1024, this, tskIDLE_PRIORITY + 2, nullptr);
-    co2_controller.start();
+    //xTaskCreate(read_sensor_run, "read_sensor_task", 1024, this, tskIDLE_PRIORITY + 1, nullptr);
     sensor_timer_start();
+    co2_controller.start();
+
     /*
      * TODO:
      * 1. pass event group handle to member classes

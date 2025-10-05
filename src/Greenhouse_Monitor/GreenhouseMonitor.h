@@ -29,6 +29,8 @@
 
 #define CO2_WARNING (1<<7) //warning from co2 controller
 
+#define ENV_SENSOR_TIMER_REACHED (1<<8)
+
 
 
 class GreenhouseMonitor {
@@ -60,12 +62,14 @@ private:
     char pwd[64]{};
 
     TimerHandle_t sensor_timer_handle = nullptr;
-    static constexpr uint32_t INTERVAL_MS = 1000;
+    static constexpr uint32_t INTERVAL_MS = 10000;
 
     EventGroupHandle_t monitor_event_group;
 
     static void sensor_timer_callback(TimerHandle_t xTimer);
-    void read_sensor_data();
+    void notify_sensors() const;
+    void read_sensor_task();
+    static void read_sensor_run(void *pvParameters);
     void sensor_timer_start();
 
     void network_connection();

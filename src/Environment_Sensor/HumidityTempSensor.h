@@ -12,8 +12,8 @@
 class HumidityTempSensor {
 private:
     std::shared_ptr<SafeModbusClient> modbus_client;
-    ModbusRegister temp_register;
-    ModbusRegister humidity_register;
+    SafeModbusRegister temp_register;
+    SafeModbusRegister humidity_register;
 
     float temperature;
     float humidity;
