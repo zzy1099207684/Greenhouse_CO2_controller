@@ -52,7 +52,7 @@ private:
     char pwd[64]{};
 
     TimerHandle_t sensor_timer_handle = nullptr;
-    static constexpr uint32_t INTERVAL_MS = 5000;
+    static constexpr uint32_t INTERVAL_MS = 1000;
 
     EventGroupHandle_t monitor_event_group;
 

@@ -64,11 +64,6 @@ void GreenhouseMonitor::read_sensor_data() {
     systemData.co2Level = static_cast<int>(co2_controller.getCurrentCO2Level());
     systemData.fanSpeed = static_cast<int>(co2_controller.getFanSpeed());
 
-    printf("systemData.humidity: %f\n", systemData.humidity);
-    printf("systemData.temperature: %f\n", systemData.temperature);
-    printf("systemData.fanSpeed: %d\n", systemData.fanSpeed);
-    printf("systemData.co2Level: %d\n", systemData.co2Level);
-
     ts.set_Temperature(systemData.temperature);
     ts.set_Relative_humidity(systemData.humidity);
     ts.set_fan_speed(systemData.fanSpeed);

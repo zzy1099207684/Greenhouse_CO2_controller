@@ -1,0 +1,113 @@
+//
+// Created by Riina on 25/09/2025.
+//
+#ifndef UI_H
+#define UI_H
+#include "FreeRTOS.h"
+#include <memory>
+#include <string.h>
+#include <cstring>
+#include <event_groups.h>
+#include "task.h"
+#include "queue.h"
+#include "ssd1306os.h"
+#include "pico/stdlib.h"
+
+enum class UIState{
+  MAIN,
+  SETTING_MENU,
+  SET_CO2,
+  NETWORK_SETTINGS
+};
+
+enum class InputMode{
+  ScrollSSID,
+  ManualSSID,
+  Password
+};
+
+enum class CharSet{
+  Lowercase,
+  Uppercase,
+  Symbols,
+  Numbers
+};
+enum class gpioType{
+  BUTTON1,
+  BUTTON2,
+  BUTTON3,
+  ROT_SWITCH,
+  ROT_ENCODER
+};
+
+struct gpioEvent{
+  gpioType type;
+  int direction;
+  TickType_t timestamp;
+};
+
+class UI_control {
+public:
+  UI_control(const std::shared_ptr<PicoI2C> &i2cbus);
+  static void gpio_callback(uint gpio, uint32_t events);
+  void init();
+
+  int get_CO2_level();
+  char* get_ssid();
+  char* get_password();
+
+  void set_CO2_level(uint16_t CO2_level);
+  void set_Relative_humidity(float Relative_humidity);
+  void set_Temperature(float Temperature);
+  void set_fan_speed(int Fan_speed);
+
+  void display_main();
+  void display_menu();
+  void display_set_co2();
+  void display_network();
+
+  void handle_menu_event(const gpioEvent &event);
+  void handle_set_co2_event(const gpioEvent &event);
+  void handle_network_scroll(const gpioEvent &event);
+  void handle_network_manual(const gpioEvent &event, char *buffer);
+
+  void run();
+  static void runner(void *params);
+
+
+private:
+  UIState current_state;
+  InputMode input_mode;
+  CharSet char_set;
+  gpioEvent gpio_event;
+
+  int menu_index;
+  uint16_t target_CO2;
+
+  //Sensor values
+  uint16_t CO2_level;
+  float Relative_humidity;
+  float Temperature;
+  int fan_status;
+
+  //Network info
+  char ssid[64];
+  char password[64];
+  int network_cursor;
+  bool editing_ssid;
+  int ssid_list_index;
+
+  char alphabet_lower[27];
+  char alphabet_upper[27];
+  char alphabet_symbols[26];
+  char alphabet_digits[11];
+
+  QueueHandle_t input_queue;
+
+  TaskHandle_t task_handle;
+  ssd1306os display;
+
+  static UI_control *instance_ptr;
+};
+
+#endif //UI_H
