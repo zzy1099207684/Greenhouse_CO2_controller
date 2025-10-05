@@ -33,8 +33,8 @@ void get_data(char *param, void *tsp) {
     } else {
         int back_res = atoi(param);
         ts->set_CO2_level(INT_MIN);
-        ts->set_Relative_humidity(INT_MIN);
-        ts->set_Temperature(INT_MIN);
+        ts->set_Relative_humidity(FLT_MIN);
+        ts->set_Temperature(FLT_MIN);
         ts->set_fan_speed(INT_MIN);
         if (back_res > 0) {
             printf("upload success\n");
@@ -82,8 +82,8 @@ void thing_speak_service::upload_data_to_thing_speak(TimerHandle_t xTimer) {
     auto *ts = static_cast<thing_speak *>(pvTimerGetTimerID(xTimer));
 
     int field_1 = ts->get_CO2_level();
-    int field_2 = ts->get_Relative_humidity();
-    int field_3 = ts->get_Temperature();
+    float field_2 = ts->get_Relative_humidity();
+    float field_3 = ts->get_Temperature();
     int field_4 = ts->get_fan_speed();
     int field_5 = ts->get_co2_level_from_network();
 
@@ -91,17 +91,18 @@ void thing_speak_service::upload_data_to_thing_speak(TimerHandle_t xTimer) {
     if (field_1 != INT_MIN) {
         sprintf(params, "field1=%d&", field_1);
     }
-    if (field_2 != INT_MIN) {
-        sprintf(params + strlen(params), "field2=%d&", field_2);
+    if (field_2 != FLT_MIN) {
+        sprintf(params + strlen(params), "field2=%f&", field_2);
     }
-    if (field_3 != INT_MIN) {
-        sprintf(params + strlen(params), "field3=%d&", field_3);
+    if (field_3 != FLT_MIN) {
+        sprintf(params + strlen(params), "field3=%f&", field_3);
     }
     if (field_4 != INT_MIN) {
-        sprintf(params + strlen(params), "field4=%d", field_4);
+        sprintf(params + strlen(params), "field4=%d&", field_4);
     }
-    if (field_5 != INT_MIN) {
-        sprintf(params + strlen(params), "field5=%d", field_5);
+    if (field_5 != INT_MIN && field_5 != ts->get_last_co2_level_from_network()) {
+        sprintf(params + strlen(params), "field5=%d&", field_5);
+        ts->set_last_co2_level_from_network(field_5);
     }
     if (strlen(params) > 0 && params[strlen(params) - 1] == '&') {
         params[strlen(params) - 1] = '\0';
