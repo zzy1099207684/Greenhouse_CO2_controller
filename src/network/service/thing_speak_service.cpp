@@ -39,7 +39,6 @@ void get_data(char *param, void *tsp) {
         if (back_res > 0) {
             printf("upload success\n");
         }
-        printf("upload failed\n");
     }
 }
 }
