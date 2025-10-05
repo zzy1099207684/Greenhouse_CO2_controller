@@ -43,6 +43,8 @@ add_library(${PROJECT_NAME}_lib
         src/CO2_Controller/CO2Valve.h
         src/CO2_Controller/CO2Controller.cpp
         src/CO2_Controller/CO2Controller.h
+        src/ui/ui.cpp
+        src/ui/ui.h
         # Include the I2C driver that EEPROM depends on
         rp2040-freertos/src/i2c/PicoI2C.cpp
         rp2040-freertos/src/i2c/PicoI2C.h
@@ -56,6 +58,13 @@ add_library(${PROJECT_NAME}_lib
         # Include the mutex wrapper
         rp2040-freertos/src/Fmutex.cpp
         rp2040-freertos/src/Fmutex.h
+        #Include ssd1306os implementation and related classes
+        rp2040-freertos/src/display/ssd1306os.cpp
+        rp2040-freertos/src/display/ssd1306os.h
+        rp2040-freertos/src/display/mono_vlsb.cpp
+        rp2040-freertos/src/display/mono_vlsb.h
+        rp2040-freertos/src/display/framebuf.cpp
+        rp2040-freertos/src/display/framebuf.h
 
         ##################network############################
         src/network/Tools/json/Json_handler.cpp
