@@ -17,7 +17,7 @@ Json_handler handler;
 static char *extract_json(char *http_response);
 
 extern "C" {
-bool run_tls_client_test(const uint8_t *cert, size_t cert_len, const char *server, const char *request, int timeout,
+bool run_tls_client(const uint8_t *cert, size_t cert_len, const char *server, const char *request, int timeout,
                          void *tsp);
 }
 
@@ -120,7 +120,7 @@ void thing_speak_service::request_HTTPS(void *param) {
     const char *server = ts->get_api_server();
     const char *request = ts->get_request();
 
-    bool pass = run_tls_client_test(things_cert, sizeof(things_cert), server, request,
+    bool pass = run_tls_client(things_cert, sizeof(things_cert), server, request,
                                     TLS_CLIENT_TIMEOUT_SECS, ts);
     if (pass) {
         printf("Test passed\n");
@@ -133,9 +133,7 @@ void thing_speak_service::request_HTTPS(void *param) {
 
 void thing_speak_service::wifi_connect(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
-    const char *ssid = ts->get_ssid();
-    const char *pwd = ts->get_pwd();
-    while (cyw43_arch_wifi_connect_timeout_ms(ssid, pwd, CYW43_AUTH_WPA2_AES_PSK, 60000)) {
+    while (cyw43_arch_wifi_connect_timeout_ms(ts->get_ssid(), ts->get_pwd(), CYW43_AUTH_WPA2_AES_PSK, 10000)) {
         printf("failed to connect\n");
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
