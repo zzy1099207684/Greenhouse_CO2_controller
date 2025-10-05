@@ -14,6 +14,7 @@
 //#include "Environment_Sensor/PressureSensor.h"
 #include "network/entry/thing_speak.h"
 #include "network/service/thing_speak_service.h"
+#include "CO2_Controller/CO2Controller.h"
 
 #define UI_SET_CO2 (1<<0) //co2 setting ready from ui
 #define UI_GET_NETWORK (1<<1) //ui needs ssid list
@@ -31,21 +32,24 @@
 
 class GreenhouseMonitor {
 private:
-    // Co2Controller& co2_controller;
+    CO2Controller& co2_controller;
     //UI& ui;
     thing_speak& ts;
     thing_speak_service& ts_service;
     HumidityTempSensor& humidityTempSensor;
     //PressureSensor& pressureSensor;
-    //EEPROM& eeprom;
+    EEPROM& eeprom;
 
     struct {
-        uint16_t co2Level;
+        int co2Level;
         float temperature;
         float humidity;
         int fanSpeed;
-        uint16_t co2SetPoint;
+        int co2SetPoint;
     } systemData{};
+
+    char ssid[64]{};
+    char pwd[64]{};
 
     TimerHandle_t sensor_timer_handle = nullptr;
     static constexpr uint32_t INTERVAL_MS = 1000;
@@ -56,28 +60,20 @@ private:
     void read_sensor_data();
     void sensor_timer_start();
 
-    void network_connection();
+    void network_connection() const;
     static void network_connection_task(void *pvParameters);
 
+    void network_init() const;
+    static void network_init_task(void *pvParameters);
 
-    //
-    // static void monitor_task(void* pvParameters);
-    //     /*
-    //      * while(1) {
-    //     *  EventBits_t bit = xEventGroupWaitBits(eventGroup,
-    //         BIT1 | BIT2 | BIT3, ...,
-    //         pdTRUE,
-    //         pdFALSE,
-    //         portMAX_DELAY);
-    //         if (bit & ...)
-    //      * }
-    //      */
+    void greenhouse_monitor_task();
+    static void greenhouse_monitor_run(void *pvParameters);
+
 
 
 public:
-    GreenhouseMonitor(HumidityTempSensor& humidityTempSensor, thing_speak& ts, thing_speak_service& ts_service);
-    ~GreenhouseMonitor();
-
+    GreenhouseMonitor(CO2Controller& co2_controller, EEPROM& eeprom, HumidityTempSensor& humidityTempSensor, thing_speak& ts, thing_speak_service& ts_service);
+    //~GreenhouseMonitor();
 
     void init();
 
