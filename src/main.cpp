@@ -23,11 +23,11 @@ int main() {
     thing_speak ts;
     thing_speak_service ts_service;
 
-    auto i2c1bus{std::make_shared<PicoI2C>(1, 400000)};
+    //auto i2c1bus{std::make_shared<PicoI2C>(1, 400000)};
     //ui...
 
     auto i2c0bus{std::make_shared<PicoI2C>(0, 400000)};
-    EEPROM  eeprom{i2c0bus};
+    EEPROM  eeprom(i2c0bus);
 
     GreenhouseMonitor monitor(co2_controller, eeprom, humidity_temp_sensor, ts, ts_service);
     monitor.init();

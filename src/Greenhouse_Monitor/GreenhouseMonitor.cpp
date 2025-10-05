@@ -61,8 +61,13 @@ void GreenhouseMonitor::sensor_timer_callback(TimerHandle_t xTimer) {
 void GreenhouseMonitor::read_sensor_data() {
     systemData.humidity = humidityTempSensor.readHumidity();
     systemData.temperature = humidityTempSensor.readTemperature();
-    systemData.co2Level = co2_controller.getCurrentCO2Level();
-    systemData.fanSpeed = co2_controller.getFanSpeed();
+    systemData.co2Level = static_cast<int>(co2_controller.getCurrentCO2Level());
+    systemData.fanSpeed = static_cast<int>(co2_controller.getFanSpeed());
+
+    printf("systemData.humidity: %f\n", systemData.humidity);
+    printf("systemData.temperature: %f\n", systemData.temperature);
+    printf("systemData.fanSpeed: %d\n", systemData.fanSpeed);
+    printf("systemData.co2Level: %d\n", systemData.co2Level);
 
     ts.set_Temperature(systemData.temperature);
     ts.set_Relative_humidity(systemData.humidity);
@@ -86,29 +91,6 @@ void GreenhouseMonitor::sensor_timer_start() {
     if (sensor_timer_handle != nullptr) xTimerStart(sensor_timer_handle, 0);
 }
 
-void GreenhouseMonitor::init() {
-    eeprom.readSSID(ssid);
-    eeprom.readPWD(pwd);
-    ts.set_ssid(ssid);
-    ts.set_pwd(pwd);
-
-    monitor_event_group = xEventGroupCreate();
-    ts.set_co2_wifi_scan_event_group(monitor_event_group);
-
-    xTaskCreate(network_init_task, "network_init_task", 256, this, tskIDLE_PRIORITY+1, nullptr);
-    xTaskCreate(thing_speak_service::start, "thing_speak_service_start", 256, &ts, tskIDLE_PRIORITY + 1, nullptr);
-    xTaskCreate(network_connection_task, "network_connection_task", 256, this, tskIDLE_PRIORITY + 1, nullptr);
-    xTaskCreate(greenhouse_monitor_run, "greenhouse_monitor_run", 1024, this, tskIDLE_PRIORITY + 1, nullptr);
-    sensor_timer_start();
-    co2_controller.start();
-    /*
-     * TODO:
-     * 1. pass event group handle to member classes
-     * 2. create and start monitor task
-     * 3. start other task if needed
-     * 4. load setting from eeprom
-     */
-}
 
 void GreenhouseMonitor::greenhouse_monitor_task() {
     while (1) {
@@ -120,11 +102,11 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
         }
         if (bit&NETWORK_SET_CO2) {
             systemData.co2SetPoint = ts.get_co2_level_from_network();
-            co2_controller.setTargetCO2Level(systemData.co2Level);
+            co2_controller.setTargetCO2Level(static_cast<float>(systemData.co2Level));
             //ui.set()
         }
         if (bit&CO2_WARNING) {
-
+            printf("warning");
         }
     }
 
@@ -133,6 +115,31 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
 void GreenhouseMonitor::greenhouse_monitor_run(void *pvParameters) {
     auto* monitor = static_cast<GreenhouseMonitor*>(pvParameters);
     monitor->greenhouse_monitor_task();
+}
+
+
+void GreenhouseMonitor::init() {
+    // eeprom.readSSID(ssid);
+    // eeprom.readPWD(pwd);
+    ts.set_ssid("B38-2G");
+    ts.set_pwd("kisupupu8697");
+
+    monitor_event_group = xEventGroupCreate();
+    ts.set_co2_wifi_scan_event_group(monitor_event_group);
+
+    xTaskCreate(network_init_task, "network_init_task", 256, this, tskIDLE_PRIORITY+1, nullptr);
+    xTaskCreate(thing_speak_service::start, "thing_speak_service_start", 256, &ts, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(network_connection_task, "network_connection_task", 256, this, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(greenhouse_monitor_run, "greenhouse_monitor_run", 1024, this, tskIDLE_PRIORITY + 1, nullptr);
+    //co2_controller.start();
+    sensor_timer_start();
+    /*
+     * TODO:
+     * 1. pass event group handle to member classes
+     * 2. create and start monitor task
+     * 3. start other task if needed
+     * 4. load setting from eeprom
+     */
 }
 
 

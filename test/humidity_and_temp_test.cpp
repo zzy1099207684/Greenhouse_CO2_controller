@@ -19,7 +19,7 @@ uint32_t read_runtime_ctr(void) {
 
 void test_task(void *pvParameters) {
     auto uart{std::make_shared<PicoOsUart>(1, 4, 5, 9600, 2)};
-    auto rtu_client{std::make_shared<ModbusClient>(uart)};
+    auto rtu_client{std::make_shared<SafeModbusClient>(uart)};
     HumidityTempSensor rh_t_sensor{rtu_client};
     printf("Starting HMP Sensor Test...\n");
     printf("Slave Address: 240\n");

@@ -49,15 +49,15 @@ class thing_speak {
 public:
     // data getters
     int get_CO2_level() const { return CO2_level; }
-    int get_Relative_humidity() const { return Relative_humidity; }
-    int get_Temperature() const { return Temperature; }
+    float get_Relative_humidity() const { return Relative_humidity; }
+    float get_Temperature() const { return Temperature; }
     int get_fan_speed() const { return fan_speed; }
     int get_co2_level_from_network() const { return co2_level_from_network; }
 
     // data setters
     void set_CO2_level(const int v) { CO2_level = v; }
-    void set_Relative_humidity(const int v) { Relative_humidity = v; }
-    void set_Temperature(const int v) { Temperature = v; }
+    void set_Relative_humidity(const float v) { Relative_humidity = v; }
+    void set_Temperature(const float v) { Temperature = v; }
     void set_fan_speed(const int v) { fan_speed = v; }
     void set_co2_level_from_network(const int v) { co2_level_from_network = v; }
 
