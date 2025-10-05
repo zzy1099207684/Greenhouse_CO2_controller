@@ -7,6 +7,10 @@ set(TEST_SOURCES
         humidity_and_temp_test.cpp
         pressure_test.cpp
         thingspeak_test.cpp
+        fan_controller_test.cpp
+        co2_sensor_test.cpp
+        valve_test.cpp
+        co2_controller_test.cpp
 )
 
 foreach (TEST_SOURCE ${TEST_SOURCES})

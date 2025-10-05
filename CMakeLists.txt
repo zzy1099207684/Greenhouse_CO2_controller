@@ -35,13 +35,24 @@ add_library(${PROJECT_NAME}_lib
         src/Environment_Sensor/HumidityTempSensor.h
         src/Environment_Sensor/PressureSensor.cpp
         src/Environment_Sensor/PressureSensor.h
+        src/CO2_Controller/CO2Sensor.cpp
+        src/CO2_Controller/CO2Sensor.h
+        src/CO2_Controller/FanController.cpp
+        src/CO2_Controller/FanController.h
+        src/CO2_Controller/CO2Valve.cpp
+        src/CO2_Controller/CO2Valve.h
+        src/CO2_Controller/CO2Controller.cpp
+        src/CO2_Controller/CO2Controller.h
         # Include the I2C driver that EEPROM depends on
         rp2040-freertos/src/i2c/PicoI2C.cpp
         rp2040-freertos/src/i2c/PicoI2C.h
+        # Include the Modbus implementation and related classes
         rp2040-freertos/src/uart/PicoOsUart.cpp
         rp2040-freertos/src/modbus/ModbusClient.cpp
         rp2040-freertos/src/modbus/ModbusRegister.cpp
         rp2040-freertos/src/modbus/nanomodbus.c
+        src/Modbus/SafeModbusClient.cpp
+        src/Modbus/SafeModbusRegister.cpp
         # Include the mutex wrapper
         rp2040-freertos/src/Fmutex.cpp
         rp2040-freertos/src/Fmutex.h
@@ -50,6 +61,7 @@ add_library(${PROJECT_NAME}_lib
         src/network/Tools/json/Json_handler.cpp
         src/network/Tools/json/Json_handler.h
         src/network/Tools/json/core_json.c
+        src/network/Tools/tls_common_patched.c
         src/network/entry/thing_speak.h
         src/network/service/thing_speak_service.cpp
         src/network/service/thing_speak_service.h
@@ -58,9 +70,10 @@ add_library(${PROJECT_NAME}_lib
         rp2040-freertos/src/ipstack/mbedtls_config.h
         rp2040-freertos/src/ipstack/lwipopts_tls.h
         rp2040-freertos/src/ipstack/lwipopts.h
-        rp2040-freertos/src/ipstack/tls_common.c
         rp2040-freertos/src/FreeRTOSConfig.h
         ##################network############################
+        # Debug
+        src/Utils/Debug.cpp
 )
 
 # Set include directories for the library
@@ -92,6 +105,11 @@ target_link_libraries(${PROJECT_NAME}_lib
         pico_lwip_mbedtls
         pico_lwip
         ##################network############################
+)
+
+target_compile_definitions(${PROJECT_NAME}_lib PUBLIC
+        NO_SYS=0            # set to 0 because we want to use lwIP with an RTOS
+        PICO_CYW43_ARCH_DEFAULT_COUNTRY_CODE=CYW43_COUNTRY_FINLAND
 )
 
 # Now create the main executable with just the main.cpp
