@@ -19,6 +19,7 @@ uint32_t read_runtime_ctr(void) {
     return timer_hw->timerawl;
 }
 }
+
 typedef struct {
     thing_speak *ts;
     thing_speak_service *ts_service;
@@ -39,30 +40,29 @@ void controller_part_scan_wifi(void *param) {
     auto *ts_struct = static_cast<TestStruct *>(param);
     auto *ts = ts_struct->ts;
     auto *ts_service = ts_struct->ts_service;
-    while(1) {
-        printf("controller scan wifi start\n");
-        auto *ts = ts_struct->ts;
-        EventBits_t wifi_init = xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(), WIFI_INIT, pdFALSE, pdTRUE,
-                                                    portMAX_DELAY); // wait for wifi init success
-        if (wifi_init & WIFI_INIT) {
-            ts_service->scan_wifi_ssid_arr(ts);
+    printf("controller scan wifi start\n");
+    EventBits_t wifi_init = xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(), WIFI_INIT, pdFALSE, pdTRUE,
+                                                portMAX_DELAY); // wait for wifi init success
+    if (wifi_init & WIFI_INIT) {
+        ts_service->scan_wifi_ssid_arr(ts);
 
-            EventBits_t wifi_scan_done = xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(), WIFI_INIT,
-                                                             pdTRUE, pdTRUE,
-                                                             portMAX_DELAY);
-            if (wifi_scan_done & WIFI_SCAN_DONE) {
-                // UI get ssid array
-                auto ssids = ts->get_wifi_scan_result(); // get wifi ssid array
-                // just for test
-                for (int i = 0; i < 9; i++) {
-                    if (ssids[i][0] != '\0') {
-                        printf("%s\n", ssids[i]);
-                    }
+        EventBits_t wifi_scan_done = xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(), WIFI_INIT,
+                                                         pdTRUE, pdTRUE,
+                                                         portMAX_DELAY);
+        if (wifi_scan_done & WIFI_SCAN_DONE) {
+            // UI get ssid array
+            auto ssids = ts->get_wifi_scan_result(); // get wifi ssid array
+            // just for test
+            for (int i = 0; i < 9; i++) {
+                if (ssids[i][0] != '\0') {
+                    printf("%s\n", ssids[i]);
                 }
             }
-            printf("controller scan wifi ssid end\n");
         }
-        vTaskDelay(pdMS_TO_TICKS(30000)); // scan every 30s
+        printf("controller scan wifi ssid end\n");
+    }
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(30000));
     }
 }
 
@@ -79,7 +79,7 @@ int main() {
 
     // set event group
 
-    xTaskCreate(wifi_init, "wifi_init", 256, &ts_struct, tskIDLE_PRIORITY+2, nullptr); // create wifi init task
+    xTaskCreate(wifi_init, "wifi_init", 256, &ts_struct, tskIDLE_PRIORITY + 2, nullptr); // create wifi init task
 
     // controller part scan wifi ssid task example
     // xTaskCreate(controller_part_scan_wifi, "controller_part_scan_wifi", 256, &ts_struct, tskIDLE_PRIORITY+1, nullptr);
@@ -89,7 +89,7 @@ int main() {
     ts.set_pwd("zzyzmy20272025888");
 
 
-    xTaskCreate(thing_speak_service::start, "timer_start", 256, &ts, tskIDLE_PRIORITY+1, nullptr);
+    xTaskCreate(thing_speak_service::start, "timer_start", 256, &ts, tskIDLE_PRIORITY + 1, nullptr);
 
     vTaskStartScheduler();
     return 0;
