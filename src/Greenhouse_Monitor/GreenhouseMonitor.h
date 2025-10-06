@@ -58,6 +58,8 @@ private:
         int co2SetPoint;
     } systemData{};
 
+    xSemaphoreHandle system_data_mutex;
+
     char ssid[64]{};
     char pwd[64]{};
 

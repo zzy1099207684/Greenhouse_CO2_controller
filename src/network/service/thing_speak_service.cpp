@@ -12,6 +12,7 @@
 #include <timers.h>
 #include "thing_speak_service.h"
 
+
 Json_handler handler;
 
 static char *extract_json(char *http_response);
@@ -68,7 +69,7 @@ void thing_speak_service::deal_SETTING_CO2_data(void *param) {
     value = handler.get_final_result();
     if (strcmp(value, "") != 0) {
         const int field_5 = atoi(value);
-        if(field_5 != ts->get_co2_level_from_network()) {
+        if((field_5 != ts->get_co2_level_from_network())&&(field_5!=0)) {
             printf("SETTING CO2 level from thing speak: %d\n", field_5);
             ts->set_co2_level_from_network(field_5);
             ts->set_last_co2_level_from_network(field_5);

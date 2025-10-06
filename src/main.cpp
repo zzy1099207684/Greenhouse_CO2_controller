@@ -16,8 +16,8 @@ extern "C" {
 int main() {
     stdio_init_all();
 
-    static thing_speak ts;
-    static thing_speak_service ts_service;
+    thing_speak ts;
+    thing_speak_service ts_service;
 
     GreenhouseMonitor monitor(ts, ts_service);
     printf("monitor started\n");
