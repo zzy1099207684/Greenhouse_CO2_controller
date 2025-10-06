@@ -34,11 +34,15 @@ void GreenhouseMonitor::network_init_task(void *pvParameters) {
 
 void GreenhouseMonitor::network_setting(){
     while (1) {
-        if (cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA) != CYW43_LINK_UP) {
-            xEventGroupClearBits(monitor_event_group, WIFI_CONNECTED);
-            //stop ts timers
-            xTimerStop();
-        }
+        // if (cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA) != CYW43_LINK_UP) {
+        //     xEventGroupClearBits(monitor_event_group, WIFI_CONNECTED);
+        //     //stop ts timers
+        //     if (ts.get_TimerHandle_get_Setting_CO2_data() != nullptr && ts.get_TimerHandle_upload_data_to_thing_speak()!= nullptr) {
+        //         xTimerStop(ts.get_TimerHandle_get_Setting_CO2_data(), 0);
+        //         xTimerStop(ts.get_TimerHandle_upload_data_to_thing_speak(), 0);
+        //     }
+        //
+        // }
         EventBits_t bits = xEventGroupWaitBits(monitor_event_group,
         UI_GET_NETWORK|UI_CONNECT_NETWORK,
         true, false, portMAX_DELAY);;
@@ -56,13 +60,15 @@ void GreenhouseMonitor::network_setting(){
         //set ssid, set password, save to eeprom, connect wifi
             strcpy(ssid, ui.get_ssid());
             strcpy(pwd, ui.get_password());
-            // eeprom.writeSSID(ssid);
-            // eeprom.writePWD(pwd);
             printf("ssid: %s\n", ssid);
             printf("password: %s\n", pwd);
             ts.set_ssid(ssid);
             ts.set_pwd(pwd);
+            eeprom.writeSSID(ssid);
+            eeprom.writePWD(pwd);
             thing_speak_service::wifi_connect(&ts);
+            // xTimerStart(ts.get_TimerHandle_upload_data_to_thing_speak(), 0);
+            // xTimerStart(ts.get_TimerHandle_get_Setting_CO2_data(), 0);
         }
     }
 }
@@ -135,6 +141,23 @@ void GreenhouseMonitor::sensor_timer_start() {
 
 
 void GreenhouseMonitor::greenhouse_monitor_task() {
+    int log_co2_setpoint = 0;
+    eeprom.readCO2Value(log_co2_setpoint);
+    xSemaphoreTake(system_data_mutex, portMAX_DELAY);
+    systemData.co2SetPoint=log_co2_setpoint;
+    xSemaphoreGive(system_data_mutex);
+    co2_controller.setTargetCO2Level(static_cast<float>(systemData.co2SetPoint));
+
+    eeprom.readSSID(ssid);
+    vTaskDelay(pdMS_TO_TICKS(50));
+    eeprom.readPWD(pwd);
+    vTaskDelay(pdMS_TO_TICKS(50));
+
+    printf("ssid: %s\n", ssid);
+    printf("pwd: %s\n", pwd);
+    ts.set_ssid(ssid);
+    ts.set_pwd(pwd);
+
     while (1) {
         auto bit = xEventGroupWaitBits(monitor_event_group,
             UI_SET_CO2 | NETWORK_SET_CO2| CO2_WARNING,
@@ -146,7 +169,7 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
             xSemaphoreGive(system_data_mutex);
             co2_controller.setTargetCO2Level(static_cast<float>(systemData.co2SetPoint));
             ts.set_co2_level_from_network(systemData.co2SetPoint);
-            printf("setting from ui");
+            eeprom.writeCO2Value(systemData.co2SetPoint);
         }
         if (bit&NETWORK_SET_CO2) {
             int set_point = ts.get_co2_level_from_network();
@@ -171,13 +194,6 @@ void GreenhouseMonitor::greenhouse_monitor_run(void *pvParameters) {
 
 
 void GreenhouseMonitor::init() {
-    // eeprom.readSSID(ssid);
-    // eeprom.readPWD(pwd);
-    // eeprom.writeCO2Value(450);
-    // eeprom.readCO2Value(systemData.co2SetPoint);
-    //co2_controller.setTargetCO2Level(systemData.co2Level);
-
-
 
     co2_controller.start();
     xTaskCreate(network_init_task, "network_init_task", 256, this, tskIDLE_PRIORITY+2, nullptr);
@@ -187,14 +203,6 @@ void GreenhouseMonitor::init() {
     xTaskCreate(read_sensor_run, "read_sensor_task", 1024, this, tskIDLE_PRIORITY + 1, nullptr);
     sensor_timer_start();
 
-
-    /*
-     * TODO:
-     * 1. pass event group handle to member classes
-     * 2. create and start monitor task
-     * 3. start other task if needed
-     * 4. load setting from eeprom
-     */
 }
 
 

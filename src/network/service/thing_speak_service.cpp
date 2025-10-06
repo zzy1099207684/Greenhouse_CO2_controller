@@ -93,7 +93,7 @@ void thing_speak_service::upload_data_to_thing_speak(TimerHandle_t xTimer) {
     if (field_4 == INT_MIN) field_4 = 0;
     sprintf(params + strlen(params), "field4=%d&", field_4);
     if (field_5 == INT_MIN) field_5 = 0;
-    sprintf(params + strlen(params), "field5=%d", field_5);
+    sprintf(params + strlen(params), "field5=%d&", field_5);
     params[strlen(params) - 1] = '\0';
     char request[200] = {};
     sprintf(request, "GET /update?api_key=%s&%s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
@@ -213,10 +213,9 @@ void thing_speak_service::start(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
     printf("timer start\n");
     EventBits_t b = xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
-                                        WIFI_INIT, pdFALSE,
+                                        WIFI_INIT|WIFI_CONNECTED, pdFALSE,
                                         pdTRUE,portMAX_DELAY); // wait for wifi init success
-    if (b & WIFI_INIT) {
-        wifi_connect(param);
+    if (b & (WIFI_INIT|WIFI_CONNECTED)) {
         TimerHandle_t get_Setting_CO2_data = xTimerCreate("get_SETTING_CO2_data",
                                                           pdMS_TO_TICKS(5000), // 5s
                                                           pdTRUE, // period
