@@ -46,7 +46,7 @@ void controller_part_scan_wifi(void *param) {
     if (wifi_init & WIFI_INIT) {
         ts_service->scan_wifi_ssid_arr(ts);
 
-        EventBits_t wifi_scan_done = xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(), WIFI_INIT,
+        EventBits_t wifi_scan_done = xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(), WIFI_SCAN_DONE,
                                                          pdTRUE, pdTRUE,
                                                          portMAX_DELAY);
         if (wifi_scan_done & WIFI_SCAN_DONE) {
@@ -81,15 +81,17 @@ int main() {
 
     xTaskCreate(wifi_init, "wifi_init", 256, &ts_struct, tskIDLE_PRIORITY + 2, nullptr); // create wifi init task
 
-    // controller part scan wifi ssid task example
-    // xTaskCreate(controller_part_scan_wifi, "controller_part_scan_wifi", 256, &ts_struct, tskIDLE_PRIORITY+1, nullptr);
+
+
+    xTaskCreate(controller_part_scan_wifi, "controller_part_scan_wifi", 256, &ts_struct, tskIDLE_PRIORITY+2, nullptr);
 
     // set wifi ssid and pwd
     ts.set_ssid("Redmi_138D");
     ts.set_pwd("zzyzmy20272025888");
 
-
+    // controller part scan wifi ssid task example
     xTaskCreate(thing_speak_service::start, "timer_start", 256, &ts, tskIDLE_PRIORITY + 1, nullptr);
+
 
     vTaskStartScheduler();
     return 0;

@@ -56,7 +56,6 @@ public:
     float get_Temperature() const { return Temperature; }
     int get_fan_speed() const { return fan_speed; }
     int get_co2_level_from_network() const { return co2_level_from_network; }
-    int get_last_co2_level_from_network() const { return last_co2_level_from_network; }
 
     // data setters
     void set_CO2_level(const int v) { CO2_level = v; }
@@ -64,7 +63,6 @@ public:
     void set_Temperature(const float v) { Temperature = v; }
     void set_fan_speed(const int v) { fan_speed = v; }
     void set_co2_level_from_network(const int v) { co2_level_from_network = v; }
-    void set_last_co2_level_from_network(const int v) { last_co2_level_from_network = v; }
 
     // string getters
     char *get_response() { return response; }
@@ -122,7 +120,6 @@ private:
     float Temperature{FLT_MIN};
     int fan_speed{INT_MIN};
     int co2_level_from_network{INT_MIN};
-    int last_co2_level_from_network{INT_MIN};
     EventGroupHandle_t co2_wifi_scan_event_group{};
     char wifi_scan_result[10][64]{};
     int wifi_ssid_index{0};
