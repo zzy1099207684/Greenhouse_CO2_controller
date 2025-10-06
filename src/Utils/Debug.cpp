@@ -1,44 +1,70 @@
-//
-// Created by Sheng Tai on 25/09/2025.
-//
-
 #include "Debug.h"
-#include <cstdio>
-#include <iostream>
 
-QueueHandle_t Debug::debugQueue = nullptr;
-bool Debug::initialized = false;
+#ifdef DEBUG_ENABLE
 
-void Debug::init() {
-    initialized = true;
-    debugQueue = xQueueCreate(16, sizeof(debugEvent));
-    xTaskCreate(printTask, "Debug", 512, nullptr, tskIDLE_PRIORITY + 1, nullptr);
-}
+#include <cstdarg>
+QueueHandle_t Debug::log_queue = nullptr;
 
-void Debug::println(const char *format, uint32_t d1, uint32_t d2, uint32_t d3) {
-    if (!initialized) {
-        init();
+void Debug::init()
+{
+    log_queue = xQueueCreate(QUEUE_LENGTH, sizeof(LogMsg));
+
+    if (log_queue == nullptr)
+    {
+        printf("Error: Debug Queue Create Failed\n");
+        return;
     }
-    debugEvent event{
-        .timestamp = xTaskGetTickCount(), .format = format, .data = {d1, d2, d3}
-    };
-    xQueueSend(debugQueue, &event, 0);
+
+    BaseType_t ret = xTaskCreate(logTask, "LogTask", 1024, nullptr, 1, nullptr);
+    if (ret != pdPASS)
+    {
+        printf("Error: LogTask Create Failed\n");
+    }
 }
 
-void Debug::printTask(void *pvParameters) {
-    char buffer[DEBUG_BUFFER_SIZE];
-    debugEvent event{};
-    while (true) {
-        if (xQueueReceive(debugQueue, &event, portMAX_DELAY) == pdTRUE) {
-            int len = snprintf(buffer, sizeof(buffer), event.format, event.data[0], event.data[1], event.data[2]);
-            // trim if msg is too long
-            if (len >= DEBUG_BUFFER_SIZE) {
-                len = DEBUG_BUFFER_SIZE - 1;
-                buffer[len] = '\0';
-            }
-            printf("[%lu] %s\n", event.timestamp, buffer);
+void Debug::println(const char* fmt, ...)
+{
+    LogMsg log{};
+    log.timestamp = xTaskGetTickCount();
 
-            // std::cout << "[" << event.timestamp << "] " << buffer << std::endl;
+    char temp[MSG_SIZE];
+    va_list args;
+    va_start(args, fmt);
+    int len = vsnprintf(temp, sizeof(temp), fmt, args);
+    va_end(args);
+
+    snprintf(log.msg, sizeof(log.msg), "%s", temp);
+
+    if (xQueueSend(log_queue, &log, 0) != pdTRUE)
+    {
+        printf("[%lu] [WARN] Log queue full, message dropped\n", xTaskGetTickCount());
+    }
+
+    if (len >= static_cast<int>(MSG_SIZE))
+    {
+        LogMsg warn{};
+        warn.timestamp = log.timestamp;
+        snprintf(warn.msg, sizeof(warn.msg), "[WARN] Previous log too long, truncated!");
+
+        if (xQueueSend(log_queue, &warn, 0) != pdTRUE)
+        {
+            printf("[%lu] [WARN] Log queue full, message dropped\n", xTaskGetTickCount());
         }
     }
 }
+
+void Debug::logTask(void* param)
+{
+    (void)param;
+    LogMsg log{};
+
+    while (true)
+    {
+        if (xQueueReceive(log_queue, &log, portMAX_DELAY) == pdTRUE)
+        {
+            printf("[%lu] %s\n", log.timestamp, log.msg);
+        }
+    }
+}
+
+#endif

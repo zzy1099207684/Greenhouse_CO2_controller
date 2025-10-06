@@ -1,28 +1,46 @@
-//
-// Created by Sheng Tai on 25/09/2025.
-//
+#ifndef DEBUG_H
+#define DEBUG_H
 
-#ifndef LAB4_1_DEBUG_H
-#define LAB4_1_DEBUG_H
-#include <FreeRTOS.h>
-#include <queue.h>
+#ifdef DEBUG_ENABLE
+#include "FreeRTOS.h"
+#include "queue.h"
+#include <cstdio>
 
-struct debugEvent {
-    TickType_t timestamp;
-    const char *format;
-    uint32_t data[3];
-};
-
-class Debug {
-  public:
+class Debug
+{
+public:
+    Debug() = delete;
     static void init();
-    static void println(const char *format, uint32_t d1, uint32_t d2, uint32_t d3);
+    static void println(const char* fmt, ...);
 
-  private:
-    static constexpr int DEBUG_BUFFER_SIZE = 256;
-    static void printTask(void *pvParameters);
-    static QueueHandle_t debugQueue;
-    static bool initialized;
+private:
+    static constexpr size_t MSG_SIZE = 128;
+    static constexpr size_t QUEUE_LENGTH = 10;
+    static QueueHandle_t log_queue;
+    static void logTask(void* param);
+    struct LogMsg
+    {
+        uint32_t timestamp;
+        char msg[MSG_SIZE];
+    };
 };
 
-#endif // LAB4_1_DEBUG_H
+#define DPRINT(...) Debug::print(__VA_ARGS__)
+
+#else
+class Debug
+{
+public:
+    static void init()
+    {
+    }
+
+    static void println(const char*, ...)
+    {
+    }
+};
+
+#define DPRINT(...) ((void)0)
+#endif
+
+#endif // DEBUG_H
