@@ -92,7 +92,7 @@ void thing_speak_service::upload_data_to_thing_speak(TimerHandle_t xTimer) {
     sprintf(params + strlen(params), "field3=%f&", field_3);
     if (field_4 == INT_MIN) field_4 = 0;
     sprintf(params + strlen(params), "field4=%d&", field_4);
-    if (field_5 == 0) field_5 = 0;
+    if (field_5 == INT_MIN) field_5 = 0;
     sprintf(params + strlen(params), "field5=%d", field_5);
     params[strlen(params) - 1] = '\0';
     char request[200] = {};
