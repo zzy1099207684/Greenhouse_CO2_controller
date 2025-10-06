@@ -222,7 +222,7 @@ void thing_speak_service::start(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
     printf("timer start\n");
     EventBits_t b = xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
-                                        WIFI_INIT | WIFI_CONNECTED, pdFALSE,
+                                        WIFI_INIT | WIFI_CONNECTED, pdTRUE,
                                         pdTRUE,portMAX_DELAY); // wait for wifi init success
     if (b&WIFI_CONNECTED&&b&WIFI_INIT) {
         //wifi_connect(param);
