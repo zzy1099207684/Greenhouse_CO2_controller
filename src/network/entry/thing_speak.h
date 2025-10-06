@@ -11,8 +11,6 @@
 #include "FreeRTOS.h"
 #include <cstring>
 #include <climits>
-#include <semphr.h>
-
 #include "pico/util/datetime.h"
 #include "lwip/apps/sntp.h"
 
@@ -81,11 +79,6 @@ public:
     [[nodiscard]] EventGroupHandle_t get_co2_wifi_scan_event_group() const { return co2_wifi_scan_event_group; }
     void set_co2_wifi_scan_event_group(EventGroupHandle_t g) { co2_wifi_scan_event_group = g; }
 
-    // Mutex getter
-    SemaphoreHandle_t get_field5_mutex() const { return field5_mutex; }
-    // Mutex setter
-    void set_field5_mutex(SemaphoreHandle_t m) { field5_mutex = m; }
-
     // string setters
     void set_response(const char *s) { strncpy(response, s, sizeof(response) - 1); }
     void set_request(const char *s) { strncpy(request, s, sizeof(request) - 1); }
@@ -109,7 +102,6 @@ public:
     }
 
     thing_speak() {
-        field5_mutex = xSemaphoreCreateMutex();
         set_api_server("api.thingspeak.com");
         set_write_api_key(WRITE_API_KEY);
         set_read_api_key(READ_API_KEY);
@@ -130,7 +122,6 @@ private:
     int co2_level_from_network{INT_MIN};
     int last_co2_level_from_network{INT_MIN};
     EventGroupHandle_t co2_wifi_scan_event_group{};
-    SemaphoreHandle_t field5_mutex{};
     char wifi_scan_result[10][64]{};
     int wifi_ssid_index{0};
 };
