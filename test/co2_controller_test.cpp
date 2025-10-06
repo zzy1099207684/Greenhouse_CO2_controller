@@ -12,6 +12,8 @@
 #include "pico/stdio.h"
 #include "pico/time.h"
 
+#define CO2_WARNING (1<<7) //warning from co2 controller
+
 extern "C" {
 uint32_t read_runtime_ctr(void)
 {
@@ -78,6 +80,17 @@ void readInputTask(void* pvParameters)
     }
 }
 
+void co2WarningTask(void* pvParameters)
+{
+    auto* event_group = static_cast<EventGroupHandle_t*>(pvParameters);
+    while (true)
+    {
+        vTaskDelay(pdMS_TO_TICKS(1000)); // check every 10 seconds
+        xEventGroupWaitBits(*event_group, CO2_WARNING, pdTRUE, pdFALSE, portMAX_DELAY);
+        printf("CO2 warning event bit received: CO2 level critical! Fan is running at full speed!\r\n");
+    }
+}
+
 int main()
 {
     stdio_init_all();
@@ -95,8 +108,11 @@ int main()
     printf("Creating Modbus client...\n");
     auto modbus_client = std::make_shared<SafeModbusClient>(uart);
 
+    // Create event group
+    EventGroupHandle_t event_group = xEventGroupCreate();
+
     printf("Creating CO2 Controller...\n");
-    CO2Controller co2_controller(modbus_client);
+    CO2Controller co2_controller(modbus_client, event_group);
     co2_controller.setTargetCO2Level(500.0f); // Set target CO2 level to 500 ppm
 
     printf("Starting CO2 Controller...\n");
@@ -109,8 +125,8 @@ int main()
         .co2Controller = &co2_controller,
         .uart = &uart_input
     };
-    xTaskCreate(readInputTask, "ReadInputTask", 2048, &read_input_task_params, 1, nullptr);
-
+    xTaskCreate(readInputTask, "ReadInputTask", 2048, &read_input_task_params, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(co2WarningTask, "CO2WarningTask", 2048, &event_group, tskIDLE_PRIORITY + 1, nullptr);
 
     printf("Setup complete! Entering main loop...\n\n");
     vTaskStartScheduler();

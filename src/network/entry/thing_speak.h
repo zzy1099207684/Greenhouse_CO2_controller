@@ -56,7 +56,6 @@ public:
     float get_Temperature() const { return Temperature; }
     int get_fan_speed() const { return fan_speed; }
     int get_co2_level_from_network() const { return co2_level_from_network; }
-    int get_last_co2_level_from_network() const { return last_co2_level_from_network; }
 
     // data setters
     void set_CO2_level(const int v) { CO2_level = v; }
@@ -64,7 +63,8 @@ public:
     void set_Temperature(const float v) { Temperature = v; }
     void set_fan_speed(const int v) { fan_speed = v; }
     void set_co2_level_from_network(const int v) { co2_level_from_network = v; }
-    void set_last_co2_level_from_network(const int v) { last_co2_level_from_network = v; }
+    void set_TimerHandle_get_Setting_CO2_data(TimerHandle_t t) { myTimerHandle_get_Setting_CO2_data = t; }
+    void set_TimerHandle_upload_data_to_thing_speak(TimerHandle_t t) { myTimerHandle_upload_data_to_thing_speak = t; }
 
     // string getters
     char *get_response() { return response; }
@@ -76,6 +76,8 @@ public:
     char *get_read_api_key() { return read_api_key; }
     char (*get_wifi_scan_result())[64] { return wifi_scan_result; }
     int get_wifi_ssid_index() const { return wifi_ssid_index; }
+    TimerHandle_t get_TimerHandle_get_Setting_CO2_data() const { return myTimerHandle_get_Setting_CO2_data; }
+    TimerHandle_t get_TimerHandle_upload_data_to_thing_speak() const { return myTimerHandle_upload_data_to_thing_speak; }
 
     // Group getters and setters
     [[nodiscard]] EventGroupHandle_t get_co2_wifi_scan_event_group() const { return co2_wifi_scan_event_group; }
@@ -122,10 +124,12 @@ private:
     float Temperature{FLT_MIN};
     int fan_speed{INT_MIN};
     int co2_level_from_network{INT_MIN};
-    int last_co2_level_from_network{INT_MIN};
     EventGroupHandle_t co2_wifi_scan_event_group{};
     char wifi_scan_result[10][64]{};
     int wifi_ssid_index{0};
+    TimerHandle_t myTimerHandle_get_Setting_CO2_data{nullptr};
+    TimerHandle_t myTimerHandle_upload_data_to_thing_speak{nullptr};
+
 };
 
 #endif //THING_SPEAK_H

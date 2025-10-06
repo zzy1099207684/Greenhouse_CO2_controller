@@ -10,7 +10,7 @@ GreenhouseMonitor::GreenhouseMonitor(thing_speak& ts, thing_speak_service& ts_se
     i2c0bus(std::make_shared<PicoI2C>(0, 400000)),
     i2c1bus(std::make_shared<PicoI2C>(1, 400000)),
     monitor_event_group(xEventGroupCreate()),
-    co2_controller(modbus_client),
+    co2_controller(modbus_client, monitor_event_group),
     ui(i2c1bus, monitor_event_group),
     humidityTempSensor(modbus_client),
     eeprom(i2c0bus),
