@@ -20,25 +20,36 @@ CO2Controller::CO2Controller(const std::shared_ptr<SafeModbusClient>& safe_modbu
                              EventGroupHandle_t event_group)
     : sensor(safe_modbus_client),
       fan(safe_modbus_client),
-      target_co2_level(800.0f),
-      emergency_state(false),
-      event_group(event_group)
-
+      event_group(event_group),
+      closeValveTimerHandle(nullptr),
+      mixingTimerHandle(nullptr),
+      CO2_value(0.0f),
+      CO2_setpoint(800.0f),
+      controller_state(IDLE)
 {
+    xTaskCreate(controlTask, "CO2ControlTask", TASK_STACK_SIZE / sizeof(StackType_t), this,
+                tskIDLE_PRIORITY + TASK_PRIORITY, nullptr);
+    closeValveTimerHandle = xTimerCreate("CloseValveTimer", pdMS_TO_TICKS(VALVE_OPEN_TIME_MIN),
+                                         pdFALSE, this, closeValveTimerCallback);
+    mixingTimerHandle = xTimerCreate("MixingTimer", pdMS_TO_TICKS(MIXING_TIME),
+                                     pdFALSE, this, mixingTimerCallback);
 }
 
 /**
  *
- * @param ppm Target CO2 level in ppm (0 - 1500)
+ * @param ppm Target CO2 level in ppm (200 - 1500)
  * @return true if set successfully, false if invalid value
  */
-bool CO2Controller::setTargetCO2Level(float ppm)
+bool CO2Controller::setCO2Setpoint(float ppm)
 {
-    if (ppm < 0.0f || ppm > CO2_TARGET_MAX)
+    if (ppm < 200.0f || ppm > CO2_SETPOINT_MAX)
     {
-        return false; // invalid target level
+        Debug::println("Invalid CO2 setpoint: %.2f ppm. Must be between %d and %d ppm.",
+                       ppm, CO2_SETPOINT_MIN, CO2_SETPOINT_MAX);
+        return false;
     }
-    target_co2_level = ppm;
+    Debug::println("Set CO2 setpoint to %.2f ppm", ppm);
+    CO2_setpoint = ppm;
     return true;
 }
 
@@ -46,18 +57,18 @@ bool CO2Controller::setTargetCO2Level(float ppm)
  *
  * @return Target CO2 level in ppm, set by user. (float)
  */
-float CO2Controller::getTargetCO2Level() const
+float CO2Controller::getCO2Setpoint() const
 {
-    return target_co2_level;
+    return CO2_setpoint;
 }
 
 /**
  *
  * @return Current CO2 level in ppm, read from sensor. (float)
  */
-float CO2Controller::getCurrentCO2Level()
+float CO2Controller::getCO2Value() const
 {
-    return sensor.getCO2Level();
+    return CO2_value; // cached value, updated in control loop
 }
 
 /**
@@ -66,124 +77,143 @@ float CO2Controller::getCurrentCO2Level()
  */
 float CO2Controller::getFanSpeed() const
 {
-    return static_cast<float>(fan.getSpeed()) / MAX_FAN_SPEED * 100.0f; // return as percentage
+    return static_cast<float>(fan.getSpeed()) / FAN_SPEED_MAX * 100.0f; // return as percentage
 }
 
-void CO2Controller::start()
+
+/**
+ * Callback to close the valve after timer expires
+ */
+void CO2Controller::closeValveTimerCallback(TimerHandle_t xTimer)
 {
-    xTaskCreate(controlTask, "CO2ControlTask", CONTROL_TASK_STACK_SIZE / sizeof(StackType_t), this,
-                tskIDLE_PRIORITY + CONTROL_TASK_PRIORITY, nullptr);
-    xTaskCreate(emergencyMonitorTask, "CO2EmergencyTask", EMERGENCY_TASK_STACK_SIZE / sizeof(StackType_t), this,
-                tskIDLE_PRIORITY + EMERGENCY_TASK_PRIORITY, nullptr);
+    auto* self = static_cast<CO2Controller*>(pvTimerGetTimerID(xTimer));
+    self->valve.close();
+    self->controller_state = INJECTION_MIXING;
+    xTimerStart(self->mixingTimerHandle, 0);
+    Debug::println("Valve closed, starting mixing timer.");
 }
 
+/**
+ * Callback to end mixing state after timer expires
+ */
+void CO2Controller::mixingTimerCallback(TimerHandle_t xTimer)
+{
+    auto* self = static_cast<CO2Controller*>(pvTimerGetTimerID(xTimer));
+    self->controller_state = INJECTION_READY;
+    Debug::println("Mixing time ended, ready for next injection check.");
+}
 
 void CO2Controller::controlTask(void* pvParameters)
 {
     auto* self = static_cast<CO2Controller*>(pvParameters);
+    auto& sensor = self->sensor;
+    auto& fan = self->fan;
+    auto& valve = self->valve;
+    auto& CO2_value = self->CO2_value;
+    auto& CO2_setpoint = self->CO2_setpoint;
+    auto& controller_state = self->controller_state;
+    auto& closeValveTimerHandle = self->closeValveTimerHandle;
+    auto& mixingTimerHandle = self->mixingTimerHandle;
+
     while (true)
     {
-        // normal control loop every 500ms
-        vTaskDelay(pdMS_TO_TICKS(500));
+        // control loop every 1 second
+        vTaskDelay(pdMS_TO_TICKS(CONTROL_INTERVAL_MS));
+        CO2_value = sensor.getCO2Level(); // update CO2 value
 
-        if (self->emergency_state)
+        // check for emergency first
+        if (CO2_value > CO2_CRITICAL && controller_state != EMERGENCY)
         {
-            // In emergency state, do nothing
-            Debug::println("In emergency state, waiting...", 0, 0, 0);
-            continue;
+            valve.close();
+            fan.setSpeed(FAN_SPEED_MAX);
+            xTimerStop(closeValveTimerHandle, 0);
+            xTimerStop(mixingTimerHandle, 0);
+            controller_state = EMERGENCY;
+            xEventGroupSetBits(self->event_group, CO2_WARNING);
+            Debug::println("CO2 level critical: %.2f ppm! Entering EMERGENCY state.", CO2_value);
+            Debug::println(
+                "a very long message...................................................................................................................................................................................................");
         }
 
-        // CO2 level low
-        if (self->sensor.getCO2Level() < self->target_co2_level - DEADBAND)
+        switch (controller_state)
         {
-            while (self->sensor.getCO2Level() < self->target_co2_level)
+        case IDLE:
+            // CO2 value is below the setpoint
+            if (CO2_value < CO2_setpoint - DEADBAND)
             {
-                // CO2 level is below target, open valve
-                float diff = self->target_co2_level - self->sensor.getCO2Level();
-                int open_time = static_cast<int>(diff * VALVE_TIME_K + VALVE_TIME_B); // in ms
-                if (open_time > VALVE_MAX_OPEN_TIME)
-                {
-                    open_time = VALVE_MAX_OPEN_TIME;
-                }
-                // ensure not in emergency state before action
-                if (self->emergency_state)
-                {
-                    break; // exit the loop
-                }
-                Debug::println("Opening valve for %d ms, CO2 level: %d ppm, target: %d ppm (decimal truncated)",
-                               open_time,
-                               static_cast<int>(self->sensor.getCO2Level()), static_cast<int>(self->target_co2_level));
-                self->fan.setSpeed(0);
-                self->valve.open();
-                vTaskDelay(pdMS_TO_TICKS(open_time));
-                // ensure not in emergency state before action
-                if (self->emergency_state)
-                {
-                    break; // exit the loop
-                }
-                self->valve.close();
-                // wait for some time to allow CO2 to mix
-                Debug::println("Waiting for %d ms to allow CO2 to mix", VALVE_WAIT_TIME, 0, 0);
-                vTaskDelay(pdMS_TO_TICKS(VALVE_WAIT_TIME));
+                controller_state = INJECTION_READY;
+                Debug::println("CO2 level low: %.2f ppm. Preparing for injection.", CO2_value);
             }
-        }
+            // CO2 value is above the setpoint
+            else if (CO2_value > CO2_setpoint + DEADBAND)
+            {
+                controller_state = VENTILATING;
+                Debug::println("CO2 level high: %.2f ppm. Starting ventilation.", CO2_value);
+            }
+            break;
+        case VENTILATING:
+            if (CO2_value <= CO2_setpoint)
+            {
+                fan.setSpeed(0);
+                controller_state = IDLE;
+                Debug::println("CO2 level normal: %.2f ppm. Stopping ventilation.", CO2_value);
+            }
+            else
+            {
+                float diff = CO2_value - CO2_setpoint;
+                int speed = static_cast<int>(diff * FAN_SPEED_K);
+                if (speed > FAN_SPEED_MAX)
+                {
+                    speed = FAN_SPEED_MAX;
+                }
+                else if (speed < FAN_SPEED_MIN)
+                {
+                    speed = FAN_SPEED_MIN;
+                }
+                fan.setSpeed(speed);
+            }
 
-        // CO2 level high
-        if (self->sensor.getCO2Level() > self->target_co2_level + DEADBAND)
-        {
-            while (self->sensor.getCO2Level() > self->target_co2_level)
+            break;
+        case INJECTION_READY:
+            if (CO2_value >= CO2_setpoint)
             {
-                // CO2 level is above target, turn on fan
-                float diff = self->sensor.getCO2Level() - self->target_co2_level;
-
-                int speed = static_cast<int>((diff * FAN_SPEED_K + FAN_SPEED_B) / 100 * MAX_FAN_SPEED);
-                // scale to 0-1000
-                if (speed > MAX_FAN_SPEED)
+                controller_state = IDLE;
+                Debug::println("CO2 level normal: %.2f ppm. Injection not needed.", CO2_value);
+            }
+            else
+            {
+                float diff = CO2_setpoint - CO2_value;
+                // calculate valve open time, in ms
+                int open_time = static_cast<int>(diff * VALVE_OPEN_TIME_K);
+                if (open_time > VALVE_OPEN_TIME_MAX)
                 {
-                    speed = MAX_FAN_SPEED;
+                    open_time = VALVE_OPEN_TIME_MAX;
                 }
-                // ensure not in emergency state before action
-                if (self->emergency_state)
+                else if (open_time < VALVE_OPEN_TIME_MIN)
                 {
-                    break; // exit the loop
+                    open_time = VALVE_OPEN_TIME_MIN;
                 }
-                self->fan.setSpeed(speed);
-                vTaskDelay(pdMS_TO_TICKS(1));
+                xTimerChangePeriod(closeValveTimerHandle, pdMS_TO_TICKS(open_time), 0);
+                xTimerStart(closeValveTimerHandle, 0);
+                valve.open();
+                controller_state = INJECTION_FILLING;
+                Debug::println("Injecting CO2 for %d ms.", open_time);
             }
-            if (!self->emergency_state)
+            break;
+        case INJECTION_FILLING:
+            // do nothing, wait for timer to close valve
+            break;
+        case INJECTION_MIXING:
+            // do nothing, wait for timer to end mixing
+            break;
+        case EMERGENCY:
+            if (CO2_value < CO2_SETPOINT_MAX)
             {
-                self->fan.setSpeed(0); // turn off fan when back to target
+                // below max setpoint, exit emergency, let normal control task handle the rest (fan will be adjusted in next loop)
+                controller_state = IDLE;
+                Debug::println("CO2 level safe: %.2f ppm. Exiting EMERGENCY state.", CO2_value);
             }
-        }
-    }
-}
-
-void CO2Controller::emergencyMonitorTask(void* pvParameters)
-{
-    auto* self = static_cast<CO2Controller*>(pvParameters);
-    while (true)
-    {
-        vTaskDelay(pdMS_TO_TICKS(EMERGENCY_CHECK_INTERVAL_MS));
-        if (self->sensor.getCO2Level() >= CO2_CRITICAL)
-        {
-            self->emergency_state = true; // enter emergency state
-            xEventGroupSetBits(self->event_group, CO2_WARNING); // set warning bit
-            // close valve and turn on fan at max speed
-            self->valve.close();
-            self->fan.setSpeed(MAX_FAN_SPEED);
-            Debug::println("EMERGENCY: CO2 level critical at %d ppm! Turning on fan at full speed...",
-                           static_cast<int>(self->sensor.getCO2Level()), 0, 0);
-            // run until CO2 drops to target level
-            while (self->sensor.getCO2Level() > self->target_co2_level)
-            {
-                vTaskDelay(pdMS_TO_TICKS(100)); // short delay to avoid busy loop
-            }
-            // exit emergency state
-            Debug::println("CO2 level back to safe level at %d ppm. Exiting emergency state.",
-                           static_cast<int>(self->sensor.getCO2Level()), 0, 0);
-            self->fan.setSpeed(0); // turn off fan
-            self->emergency_state = false;
-            xEventGroupClearBits(self->event_group, CO2_WARNING); // clear warning bit
+            break;
         }
     }
 }
