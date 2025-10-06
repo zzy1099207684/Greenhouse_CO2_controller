@@ -86,7 +86,7 @@ private:
   gpioEvent gpio_event;
 
   int menu_index=0;
-  int co2SetPoint=0;
+  int co2SetPoint=700;
 
   //Sensor values
   int co2_level=0;

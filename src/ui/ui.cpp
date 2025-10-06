@@ -17,6 +17,7 @@
 #define UI_GET_NETWORK (1 << 1)
 #define UI_SSID_READY (1 << 2)
 #define UI_CONNECT_NETWORK (1 << 3)
+#define WIFI_CONNECTED (1 << 9)
 
 UI_control* UI_control::instance_ptr = nullptr;
 
@@ -91,7 +92,7 @@ void UI_control::init(){
 int UI_control::get_CO2_level(){ return co2SetPoint;}
 char* UI_control::get_ssid(){ return ssid;}
 char* UI_control::get_password(){ return password;}
-void UI_control::set_CO2_level(uint16_t new_level){ co2_level = new_level; co2SetPoint = new_level;}
+void UI_control::set_CO2_level(uint16_t new_level){ co2_level = new_level;}
 void UI_control::set_Relative_humidity(float new_humidity){ Relative_humidity = new_humidity;}
 void UI_control::set_Temperature(float new_temperature){ Temperature = new_temperature;}
 void UI_control::set_fan_speed(int new_status){ fan_speed= new_status;}
@@ -174,6 +175,13 @@ void UI_control::display_network() {
 void UI_control::display_successfull_set_network() {
   display->fill(0);
   display->text("Network info set.",0,30);
+  EventBits_t bits = xEventGroupGetBits(event_group);
+  if(bits & WIFI_CONNECTED) { // If connected when transition screen is called, will display connection.  Successfull connection is displayed on main screen "Network:Online"
+    display->text("WiFi connected.",0,40);
+    connected_to_network = true;
+  } else {
+    display->text("Connecting...",0,40);
+  }
   display->show();
 }
 
@@ -191,6 +199,9 @@ void UI_control::handle_menu_event(const gpioEvent &event) {
         break;
       case 1:
         current_state= UIState::NETWORK_SETTINGS;
+        xEventGroupSetBits(event_group,UI_GET_NETWORK);
+        memset(ssid,0,sizeof(ssid));
+        memset(password,0,sizeof(password));
         input_mode = InputMode::ScrollSSID;
         network_cursor = 0;
         editing_ssid=true;
@@ -222,7 +233,7 @@ void UI_control::handle_set_co2_event(const gpioEvent &event) {
 
 void UI_control::handle_network_scroll(const gpioEvent &event) {
   if(event.type == gpioType::ROT_ENCODER){
-    xEventGroupSetBits(event_group,UI_GET_NETWORK);
+    vTaskDelay(pdMS_TO_TICKS(500));
     EventBits_t bits = xEventGroupGetBits(event_group);
     if(bits & UI_SSID_READY) {
       ssid_list_index += event.direction;
@@ -299,6 +310,7 @@ void UI_control::handle_network_manual(const gpioEvent &event, char* buffer) {
       current_state = UIState::MAIN;
       xEventGroupSetBits(event_group,UI_CONNECT_NETWORK);
       xEventGroupClearBits(event_group,UI_SSID_READY);
+      vTaskDelay(pdMS_TO_TICKS(400));
       display_successfull_set_network();
       vTaskDelay(pdMS_TO_TICKS(3000));
     }
@@ -311,6 +323,8 @@ void UI_control::run() {
   gpioEvent event;
   uint32_t last_press[5] = {0}; // ROT_ENCODER, ROT_SW, BTN1, BTN2 & BTN3
   const uint32_t debounce_ms[5] = {50, 250, 250, 250, 250};
+  EventBits_t bits = xEventGroupGetBits(event_group);
+
 
   display_main();
   display->show();
@@ -362,6 +376,11 @@ void UI_control::run() {
       }
     }
     if(needs_update) {
+      if(bits & WIFI_CONNECTED) {
+        connected_to_network = true;
+      } else {
+        connected_to_network = false;
+      }
       display->fill(0);
       switch(current_state){
         case UIState::MAIN: display_main(); break;
