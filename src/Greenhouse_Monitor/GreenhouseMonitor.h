@@ -5,6 +5,7 @@
 #ifndef GREENHOUSEMONITOR_H
 #define GREENHOUSEMONITOR_H
 
+#include "pico/cyw43_arch.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "event_groups.h"
@@ -76,8 +77,8 @@ private:
     static void read_sensor_run(void *pvParameters);
     void sensor_timer_start();
 
-    void network_connection();
-    static void network_connection_task(void *pvParameters);
+    void network_setting();
+    static void network_setting_task(void *pvParameters);
 
     void network_init() const;
     static void network_init_task(void *pvParameters);
