@@ -70,11 +70,11 @@ void controller_part_scan_wifi(void *param) {
 int main() {
     stdio_init_all();
 
-    thing_speak ts;
-    EventGroupHandle_t wifi_init_success_group = xEventGroupCreate();
+    static thing_speak ts;
+    static EventGroupHandle_t wifi_init_success_group = xEventGroupCreate();
     ts.set_co2_wifi_scan_event_group(wifi_init_success_group);
-    thing_speak_service ts_service;
-    TestStruct ts_struct{&ts, &ts_service};
+    static thing_speak_service ts_service;
+    static TestStruct ts_struct{&ts, &ts_service};
 
 
     // set event group

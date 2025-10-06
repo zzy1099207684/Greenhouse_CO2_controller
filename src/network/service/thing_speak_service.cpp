@@ -19,7 +19,7 @@ static char *extract_json(char *http_response);
 
 extern "C" {
 bool run_tls_client(const uint8_t *cert, size_t cert_len, const char *server, const char *request, int timeout,
-                         void *tsp);
+                    void *tsp);
 }
 
 extern "C" {
@@ -43,6 +43,7 @@ void get_data(char *param, void *tsp) {
     }
 }
 }
+
 void thing_speak_service::deal_SETTING_CO2_data_wrapper(void *param) {
     auto *ts = static_cast<thing_speak_service *>(param);
     ts->deal_SETTING_CO2_data(param);
@@ -69,11 +70,14 @@ void thing_speak_service::deal_SETTING_CO2_data(void *param) {
     value = handler.get_final_result();
     if (strcmp(value, "") != 0) {
         const int field_5 = atoi(value);
-        if((field_5 != ts->get_co2_level_from_network())&&(field_5!=0)) {
+        // if ((field_5 != ts->get_co2_level_from_network()) && (field_5 != 0)) {
+        if ((field_5 != ts->get_co2_level_from_network())) {
             printf("SETTING CO2 level from thing speak: %d\n", field_5);
+            xSemaphoreTake(ts->get_field5_mutex(), portMAX_DELAY);
             ts->set_co2_level_from_network(field_5);
             ts->set_last_co2_level_from_network(field_5);
             xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), NETWORK_SET_CO2); // set co2 level change bit
+            xSemaphoreGive(ts->get_field5_mutex());
         }
     }
 }
@@ -82,13 +86,12 @@ void thing_speak_service::deal_SETTING_CO2_data(void *param) {
 void thing_speak_service::upload_data_to_thing_speak(TimerHandle_t xTimer) {
     auto *ts = static_cast<thing_speak *>(pvTimerGetTimerID(xTimer));
 
+    char params[64] = {};
     int field_1 = ts->get_CO2_level();
     float field_2 = ts->get_Relative_humidity();
     float field_3 = ts->get_Temperature();
     int field_4 = ts->get_fan_speed();
-    int field_5 = ts->get_co2_level_from_network();
-
-    char params[64] = {};
+    int field_5 = INT_MIN;
     if (field_1 != INT_MIN) {
         sprintf(params, "field1=%d&", field_1);
     }
@@ -101,10 +104,14 @@ void thing_speak_service::upload_data_to_thing_speak(TimerHandle_t xTimer) {
     if (field_4 != INT_MIN) {
         sprintf(params + strlen(params), "field4=%d&", field_4);
     }
+    xSemaphoreTake(ts->get_field5_mutex(), portMAX_DELAY);
+    field_5 = ts->get_co2_level_from_network();
     if (field_5 != INT_MIN && field_5 != ts->get_last_co2_level_from_network()) {
         sprintf(params + strlen(params), "field5=%d&", field_5);
         ts->set_last_co2_level_from_network(field_5);
     }
+    xSemaphoreGive(ts->get_field5_mutex());
+
     if (strlen(params) > 0 && params[strlen(params) - 1] == '&') {
         params[strlen(params) - 1] = '\0';
         char request[200] = {};
@@ -123,7 +130,7 @@ void thing_speak_service::request_HTTPS(void *param) {
     const char *request = ts->get_request();
 
     bool pass = run_tls_client(things_cert, sizeof(things_cert), server, request,
-                                    TLS_CLIENT_TIMEOUT_SECS, ts);
+                               TLS_CLIENT_TIMEOUT_SECS, ts);
     if (pass) {
         printf("Test passed\n");
     } else {
@@ -240,4 +247,3 @@ void thing_speak_service::start(void *param) {
         vTaskDelete(nullptr); // delete self task
     }
 }
-
