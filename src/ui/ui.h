@@ -61,11 +61,14 @@ public:
   void set_Temperature(float Temperature);
   void set_fan_speed(int Fan_speed);
   void set_ssid_list(const char* list[]);
+  void set_network_status(bool status);
 
   void display_main();
   void display_menu();
   void display_set_co2();
+  void display_successfull_set_co2();
   void display_network();
+  void display_successfull_set_network();
 
   void handle_menu_event(const gpioEvent &event);
   void handle_set_co2_event(const gpioEvent &event);
@@ -83,7 +86,7 @@ private:
   gpioEvent gpio_event;
 
   int menu_index=0;
-  int co2SetPoint=0;
+  int co2SetPoint=700;
 
   //Sensor values
   int co2_level=0;
@@ -97,6 +100,7 @@ private:
   int network_cursor=0;
   bool editing_ssid=true;
   int ssid_list_index=0;
+  bool connected_to_network=false;
 
   char alphabet_lower[27];
   char alphabet_upper[27];
