@@ -211,7 +211,7 @@ void thing_speak_service::start(void *param) {
                                         WIFI_INIT | WIFI_CONNECTED, pdFALSE,
                                         pdTRUE,portMAX_DELAY); // wait for wifi init success
     if (b&WIFI_CONNECTED&&b&WIFI_INIT) {
-        //wifi_connect(param);
+        wifi_connect(param);
         TimerHandle_t get_Setting_CO2_data = xTimerCreate("get_SETTING_CO2_data",
                                                           pdMS_TO_TICKS(5000), // 5s
                                                           pdTRUE, // period
