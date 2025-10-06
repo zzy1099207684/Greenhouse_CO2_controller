@@ -14,12 +14,15 @@
 #include <cstdio>
 #include "Utils/Debug.h"
 
-CO2Controller::CO2Controller(const std::shared_ptr<SafeModbusClient>& safe_modbus_client)
-    : valve(),
-      sensor(safe_modbus_client),
+#define CO2_WARNING (1<<7) //warning from co2 controller
+
+CO2Controller::CO2Controller(const std::shared_ptr<SafeModbusClient>& safe_modbus_client,
+                             EventGroupHandle_t event_group)
+    : sensor(safe_modbus_client),
       fan(safe_modbus_client),
       target_co2_level(800.0f),
-      emergency_state(false)
+      emergency_state(false),
+      event_group(event_group)
 
 {
 }
@@ -164,6 +167,7 @@ void CO2Controller::emergencyMonitorTask(void* pvParameters)
         if (self->sensor.getCO2Level() >= CO2_CRITICAL)
         {
             self->emergency_state = true; // enter emergency state
+            xEventGroupSetBits(self->event_group, CO2_WARNING); // set warning bit
             // close valve and turn on fan at max speed
             self->valve.close();
             self->fan.setSpeed(MAX_FAN_SPEED);
@@ -172,13 +176,14 @@ void CO2Controller::emergencyMonitorTask(void* pvParameters)
             // run until CO2 drops to target level
             while (self->sensor.getCO2Level() > self->target_co2_level)
             {
-                vTaskDelay(pdMS_TO_TICKS(10)); // short delay to avoid busy loop
+                vTaskDelay(pdMS_TO_TICKS(100)); // short delay to avoid busy loop
             }
             // exit emergency state
             Debug::println("CO2 level back to safe level at %d ppm. Exiting emergency state.",
                            static_cast<int>(self->sensor.getCO2Level()), 0, 0);
             self->fan.setSpeed(0); // turn off fan
             self->emergency_state = false;
+            xEventGroupClearBits(self->event_group, CO2_WARNING); // clear warning bit
         }
     }
 }

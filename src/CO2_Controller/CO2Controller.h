@@ -8,13 +8,14 @@
 #include <memory>
 #include "CO2Valve.h"
 #include "CO2Sensor.h"
+#include "event_groups.h"
 #include "FanController.h"
 #include "semphr.h"
 
 class CO2Controller
 {
 public:
-    explicit CO2Controller(const std::shared_ptr<SafeModbusClient>& safe_modbus_client);
+    explicit CO2Controller(const std::shared_ptr<SafeModbusClient>& safe_modbus_client, EventGroupHandle_t event_group);
     bool setTargetCO2Level(float ppm);
     [[nodiscard]] float getTargetCO2Level() const;
     [[nodiscard]] float getCurrentCO2Level();
@@ -54,7 +55,7 @@ private:
     // parameters
     float target_co2_level; // in ppm
     bool emergency_state;
-
+    EventGroupHandle_t event_group;
 };
 
 
