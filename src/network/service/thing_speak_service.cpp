@@ -84,10 +84,15 @@ void thing_speak_service::upload_data_to_thing_speak(TimerHandle_t xTimer) {
     int field_5 = ts->get_co2_level_from_network();
 
     char params[64] = {};
+    if (field_1 == INT_MIN) field_1 = 0;
     sprintf(params, "field1=%d&", field_1);
+    if (field_2 == FLT_MIN) field_2 = 0.0f;
     sprintf(params + strlen(params), "field2=%f&", field_2);
+    if (field_3 == FLT_MIN) field_3 = 0.0f;
     sprintf(params + strlen(params), "field3=%f&", field_3);
+    if (field_4 == INT_MIN) field_4 = 0;
     sprintf(params + strlen(params), "field4=%d&", field_4);
+    if (field_5 == 0) field_5 = 0;
     sprintf(params + strlen(params), "field5=%d", field_5);
     params[strlen(params) - 1] = '\0';
     char request[200] = {};
