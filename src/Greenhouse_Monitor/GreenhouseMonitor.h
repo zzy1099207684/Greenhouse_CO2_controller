@@ -31,6 +31,8 @@
 
 #define ENV_SENSOR_TIMER_REACHED (1<<8)
 
+#define WIFI_CONNECTED (1<<9)
+
 
 
 class GreenhouseMonitor {

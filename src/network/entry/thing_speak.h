@@ -18,6 +18,8 @@
 #define WIFI_INIT (1 << 5) // wifi_init_success
 #define WIFI_SCAN_DONE (1 << 6) // wifi_scan_done
 
+#define WIFI_CONNECTED (1<<9)
+
 
 #define WRITE_API_KEY "3O010WOMXCBHN887"
 #define READ_API_KEY  "754RZS4U9IAOOGOE"

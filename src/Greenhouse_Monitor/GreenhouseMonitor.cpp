@@ -22,6 +22,7 @@ GreenhouseMonitor::GreenhouseMonitor(thing_speak& ts, thing_speak_service& ts_se
 void GreenhouseMonitor::network_init() const {
     printf("wifi_init start\n");
     ts_service.network_init(&ts);
+    thing_speak_service::wifi_connect(&ts);
     vTaskDelete(nullptr);
 }
 
@@ -170,14 +171,12 @@ void GreenhouseMonitor::init() {
     // eeprom.writeCO2Value(450);
     // eeprom.readCO2Value(systemData.co2SetPoint);
     //co2_controller.setTargetCO2Level(systemData.co2Level);
-    ts.set_ssid("");
-    ts.set_pwd("");
 
 
     co2_controller.start();
     xTaskCreate(network_init_task, "network_init_task", 256, this, tskIDLE_PRIORITY+2, nullptr);
     xTaskCreate(thing_speak_service::start, "thing_speak_service_start", 256, &ts, tskIDLE_PRIORITY + 1, nullptr);
-    xTaskCreate(network_connection_task, "network_connection_task", 1024, this, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(network_connection_task, "network_connection_task", 1024, this, tskIDLE_PRIORITY + 2, nullptr);
     xTaskCreate(greenhouse_monitor_run, "greenhouse_monitor_run", 1024, this, tskIDLE_PRIORITY + 2, nullptr);
     xTaskCreate(read_sensor_run, "read_sensor_task", 1024, this, tskIDLE_PRIORITY + 1, nullptr);
     sensor_timer_start();

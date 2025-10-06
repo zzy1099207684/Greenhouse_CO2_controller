@@ -135,11 +135,14 @@ void thing_speak_service::request_HTTPS(void *param) {
 
 void thing_speak_service::wifi_connect(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
-    while (cyw43_arch_wifi_connect_timeout_ms(ts->get_ssid(), ts->get_pwd(), CYW43_AUTH_WPA2_AES_PSK, 10000)) {
+    if (cyw43_arch_wifi_connect_timeout_ms(ts->get_ssid(), ts->get_pwd(), CYW43_AUTH_WPA2_AES_PSK, 10000)) {
         printf("failed to connect\n");
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
-    printf("WiFi connected\n");
+    else {
+        printf("WiFi connected\n");
+        xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_CONNECTED);
+    }
 }
 
 
@@ -219,10 +222,10 @@ void thing_speak_service::start(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
     printf("timer start\n");
     EventBits_t b = xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
-                                        WIFI_INIT, pdFALSE,
+                                        WIFI_INIT | WIFI_CONNECTED, pdFALSE,
                                         pdTRUE,portMAX_DELAY); // wait for wifi init success
-    if (b & WIFI_INIT) {
-        wifi_connect(param);
+    if (b&WIFI_CONNECTED&&b&WIFI_INIT) {
+        //wifi_connect(param);
         TimerHandle_t get_Setting_CO2_data = xTimerCreate("get_SETTING_CO2_data",
                                                           pdMS_TO_TICKS(5000), // 5s
                                                           pdTRUE, // period
