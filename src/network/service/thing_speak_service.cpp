@@ -231,6 +231,8 @@ void thing_speak_service::start(void *param) {
                                                        param,
                                                        upload_data_to_thing_speak);
         xTimerStart(upload_data_to_ts, 0);
+        ts->set_TimerHandle_get_Setting_CO2_data(get_Setting_CO2_data);
+        ts->set_TimerHandle_upload_data_to_thing_speak(upload_data_to_ts);
         vTaskDelete(nullptr); // delete self task
     }
 }
