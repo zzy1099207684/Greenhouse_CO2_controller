@@ -17,6 +17,7 @@
 #define UI_GET_NETWORK (1 << 1)
 #define UI_SSID_READY (1 << 2)
 #define UI_CONNECT_NETWORK (1 << 3)
+#define CO2_WARNING (1<<7)
 #define WIFI_CONNECTED (1 << 9)
 
 UI_control* UI_control::instance_ptr = nullptr;
@@ -92,10 +93,10 @@ void UI_control::init(){
 int UI_control::get_CO2_level(){ return co2SetPoint;}
 char* UI_control::get_ssid(){ return ssid;}
 char* UI_control::get_password(){ return password;}
-void UI_control::set_CO2_level(uint16_t new_level){ co2_level = new_level;}
-void UI_control::set_Relative_humidity(float new_humidity){ Relative_humidity = new_humidity;}
-void UI_control::set_Temperature(float new_temperature){ Temperature = new_temperature;}
-void UI_control::set_fan_speed(int new_status){ fan_speed= new_status;}
+void UI_control::set_CO2_level(uint16_t new_level){ co2_level = new_level;needs_update=true; }
+void UI_control::set_Relative_humidity(float new_humidity){ Relative_humidity = new_humidity; needs_update=true; }
+void UI_control::set_Temperature(float new_temperature){ Temperature = new_temperature; needs_update=true; }
+void UI_control::set_fan_speed(int new_status){ fan_speed= new_status; needs_update=true; }
 
 void UI_control::set_ssid_list(const char *list[]) {
   for(int i=0; i < 10; i++) {
@@ -106,24 +107,27 @@ void UI_control::set_ssid_list(const char *list[]) {
       ssid_list[i][0] = '\0';
     }
   }
+  needs_update=true;
 }
 void  UI_control::set_network_status(bool status) {
   connected_to_network = status;
+  needs_update=true;
 }
 
 void UI_control::display_main(){
   char buff[32];
+  EventBits_t bits = xEventGroupGetBits(event_group);
   sprintf(buff,"CO2:%d",co2_level);
   display->text(buff, 0, 0);
   sprintf(buff,"Humidity: %.1f",Relative_humidity);
   display->text(buff, 0, 8);
   sprintf(buff,"Temperature: %.1f",Temperature);
   display->text(buff, 0, 16);
-  if(fan_speed > 0){
+  if((bits&CO2_WARNING) && fan_speed == 100){
     display->text("Fan on !!ALARM!!", 0, 24);
-  } else {
-    display->text("Fan off", 0, 24);
-  }
+  } else if (fan_speed > 0){
+    display->text("Fan on", 0, 24);
+  } else
   if(connected_to_network) {
     display->text("Network:Online", 0, 32);
   } else {
@@ -240,22 +244,20 @@ void UI_control::handle_network_scroll(const gpioEvent &event) {
       if(ssid_list_index < 0) ssid_list_index = 0;
       if(ssid_list_index > 9) ssid_list_index = 9;
       strcpy(ssid, ssid_list[ssid_list_index]);
-      needs_update = true;
     }
   }
   if(event.type == gpioType::BUTTON2) {
     input_mode = InputMode::ManualSSID;
     network_cursor = 0;
     if(ssid[0] == '\0') ssid[0] = alphabet_lower[0];
-    needs_update = true;
   }
 
   if(event.type == gpioType::ROT_SWITCH) {
     input_mode = InputMode::Password;
     network_cursor = 0;
     if(password[0] == '\0') password[0] = alphabet_lower[0];
-    needs_update = true;
   }
+  needs_update = true;
 }
 
 void UI_control::handle_network_manual(const gpioEvent &event, char* buffer) {
