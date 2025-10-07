@@ -102,7 +102,6 @@ private:
   char ssid[64];
   char password[64];
   int network_cursor=0;
-  bool editing_ssid=true;
   int ssid_list_index=0;
   bool connected_to_network=false;
 

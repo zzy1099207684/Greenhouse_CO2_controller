@@ -230,7 +230,6 @@ void UI_control::handle_menu_event(const gpioEvent &event) {
         ssid_list_index = 0;
         input_mode = InputMode::ScrollSSID;
         network_cursor = 0;
-        editing_ssid=true;
         break;
       case 2:
         current_state = UIState::MAIN;
