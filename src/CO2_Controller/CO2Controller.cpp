@@ -210,6 +210,7 @@ void CO2Controller::controlTask(void* pvParameters)
                 // below max setpoint, exit emergency, let normal control task handle the rest (fan will be adjusted in next loop)
                 controller_state = IDLE;
                 Debug::println("CO2 level safe: %.2f ppm. Exiting EMERGENCY state.", CO2_value);
+                xEventGroupClearBits(self->event_group, CO2_WARNING);
             }
             break;
         }

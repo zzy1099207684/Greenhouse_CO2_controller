@@ -17,7 +17,6 @@
 #define UI_GET_NETWORK (1 << 1)
 #define UI_SSID_READY (1 << 2)
 #define UI_CONNECT_NETWORK (1 << 3)
-#define CO2_WARNING (1<<7)
 #define WIFI_CONNECTED (1 << 9)
 
 UI_control* UI_control::instance_ptr = nullptr;
@@ -93,7 +92,7 @@ void UI_control::init(){
 int UI_control::get_CO2_level(){ return co2SetPoint;}
 char* UI_control::get_ssid(){ return ssid;}
 char* UI_control::get_password(){ return password;}
-void UI_control::set_CO2_level(uint16_t new_level){ co2_level = new_level;needs_update=true; }
+void UI_control::set_CO2_level(int new_level){ co2_level = new_level;needs_update=true; }
 void UI_control::set_Relative_humidity(float new_humidity){ Relative_humidity = new_humidity; needs_update=true; }
 void UI_control::set_Temperature(float new_temperature){ Temperature = new_temperature; needs_update=true; }
 void UI_control::set_fan_speed(int new_status){ fan_speed= new_status; needs_update=true; }
@@ -114,26 +113,44 @@ void  UI_control::set_network_status(bool status) {
   needs_update=true;
 }
 
+void UI_control::set_CO2_alarm(bool is_Emergency) {
+  co2_alarm = is_Emergency;
+  needs_update=true;
+}
+
 void UI_control::display_main(){
   char buff[32];
-  EventBits_t bits = xEventGroupGetBits(event_group);
-  sprintf(buff,"CO2:%d",co2_level);
-  display->text(buff, 0, 0);
-  sprintf(buff,"Humidity: %.1f",Relative_humidity);
-  display->text(buff, 0, 8);
-  sprintf(buff,"Temperature: %.1f",Temperature);
-  display->text(buff, 0, 16);
-  if((bits&CO2_WARNING) && fan_speed == 100){
-    display->text("Fan on !!ALARM!!", 0, 24);
+  sprintf(buff,"%dppm",co2_level);
+  display->text("CO2:" , 0, 0);
+  display->text(buff, 70, 0);
+  sprintf(buff,"%dppm" ,co2SetPoint);
+  display->text("Target:" , 0, 8);
+  display->text(buff, 70, 8);
+  sprintf(buff,"%.1f%%",Relative_humidity);
+  display->text("Rh:", 0, 16);
+  display->text(buff, 70, 16);
+  sprintf(buff,"%.1fC",Temperature);
+  display->text("Temp:", 0, 24);
+  display->text(buff, 70, 24);
+  if(co2_alarm){
+    display->rect(0,33,128,8,1,true);
+    display->text("Fan:", 0, 33,0);
+    display->text("!!ALARM!!", 40, 33,0);
   } else if (fan_speed > 0){
-    display->text("Fan on", 0, 24);
-  } else
-  if(connected_to_network) {
-    display->text("Network:Online", 0, 32);
-  } else {
-    display->text("Network:Offline", 0, 32);
+    display->text("Fan:", 0, 33);
+    display->text("ON", 70, 33);
+  } else{
+    display->text("Fan:", 0, 33);
+    display->text("OFF", 70, 33);
   }
-  display->text("Button for Menu", 0, 50);
+  display->text("Network:", 0, 42);
+  if(connected_to_network) {
+    display->text("Online", 70, 42);
+  } else {
+    display->text("Offline", 70, 42);
+  }
+  display->rect(0,54,128,8,1,true);
+  display->text("Button for Menu", 0, 54, 0);
 }
 
 void UI_control::display_menu(){
@@ -229,13 +246,14 @@ void UI_control::handle_set_co2_event(const gpioEvent &event) {
   if(event.type == gpioType::ROT_SWITCH){
     display_successfull_set_co2();
     vTaskDelay(pdMS_TO_TICKS(3000));
-    current_state = UIState::SETTING_MENU;
+    current_state = UIState::MAIN;
     xEventGroupSetBits(event_group, UI_SET_CO2);
     needs_update = true;
   }
 }
 
 void UI_control::handle_network_scroll(const gpioEvent &event) {
+  strcpy(ssid, ssid_list[ssid_list_index]);
   if(event.type == gpioType::ROT_ENCODER){
     vTaskDelay(pdMS_TO_TICKS(500));
     EventBits_t bits = xEventGroupGetBits(event_group);
@@ -327,13 +345,13 @@ void UI_control::run() {
   const uint32_t debounce_ms[5] = {50, 250, 250, 250, 250};
   EventBits_t bits = xEventGroupGetBits(event_group);
 
-
+  display->fill(0);
   display_main();
   display->show();
   needs_update=false;
 
   while(true){
-    if(xQueueReceive(input_queue, &event, portMAX_DELAY)==pdTRUE){
+    if(xQueueReceive(input_queue, &event, pdMS_TO_TICKS(50))==pdTRUE){
       int index = -1;
       switch(event.type) {
         case gpioType::ROT_ENCODER: index = 0; break;
