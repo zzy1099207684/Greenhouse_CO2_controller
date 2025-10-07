@@ -46,6 +46,7 @@ void get_data(char *param, void *tsp) {
 
 // timer
 void thing_speak_service::get_SETTING_CO2_data(void *param) {
+    int count = 0;
     for (;;) {
         auto *ts = static_cast<thing_speak *>(param);
         xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
@@ -58,7 +59,13 @@ void thing_speak_service::get_SETTING_CO2_data(void *param) {
                 "GET /channels/3083662/feeds.json?api_key=%s&results=1 HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
                 ts->get_read_api_key(), ts->get_api_server());
         ts->set_request(request);
-        request_HTTPS(ts); //get data from thing speak
+        // if co2 setting data is from hardware, do not get data from thing speak 2 times
+        if (!ts->get_is_co2_setting_data_from_hardware() && count < 2) {
+            request_HTTPS(ts);
+            count++;
+        } else {
+            count = 0;
+        }
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
@@ -145,6 +152,7 @@ void thing_speak_service::wifi_connect(void *param) {
         netif_set_up(&cyw43_state.netif[CYW43_ITF_STA]);
         dhcp_start(&cyw43_state.netif[CYW43_ITF_STA]);
         cyw43_arch_lwip_end();
+
         if (ret == 0) {
             cyw43_arch_lwip_begin();
             if (dhcp_supplied_address(&cyw43_state.netif[CYW43_ITF_STA]) == 0) {
@@ -159,7 +167,8 @@ void thing_speak_service::wifi_connect(void *param) {
 
             if (has_ip) {
                 printf("WiFi connected\n");
-                xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_CONNECTED | WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK|
+                xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(),
+                                   WIFI_CONNECTED | WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK |
                                    WIFI_CONNECTED_GET_SETTING_CO2_DATA);
                 vTaskSuspend(ts->get_wifi_connect_handle());
                 fail_count = 0;
@@ -242,7 +251,7 @@ void thing_speak_service::scan_wifi_ssid_arr(void *param) {
         printf("scan start failed: %d\n", rc);
     }
     cyw43_arch_lwip_begin();
-    vTaskDelay(pdMS_TO_TICKS(5000));
+    vTaskDelay(pdMS_TO_TICKS(3000));
     cyw43_arch_lwip_end();
     xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_SCAN_DONE);
     printf("Scan done.\n");

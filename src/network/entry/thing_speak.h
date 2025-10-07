@@ -61,6 +61,7 @@ public:
     float get_Temperature() const { return Temperature; }
     int get_fan_speed() const { return fan_speed; }
     int get_co2_level_from_network() const { return co2_level_from_network; }
+    bool get_is_co2_setting_data_from_hardware() const { return is_co2_setting_data_from_hardware; }
 
     // data setters
     void set_CO2_level(const int v) { CO2_level = v; }
@@ -68,6 +69,7 @@ public:
     void set_Temperature(const float v) { Temperature = v; }
     void set_fan_speed(const int v) { fan_speed = v; }
     void set_co2_level_from_network(const int v) { co2_level_from_network = v; }
+    void set_is_co2_setting_data_from_hardware(const bool v) { is_co2_setting_data_from_hardware = v; }
 
     // string getters
     char *get_response() { return response; }
@@ -83,6 +85,10 @@ public:
     // Task handle getters
     TaskHandle_t* get_wifi_connect_handle_ptr() { return &wifi_connect_handle; }
     TaskHandle_t  get_wifi_connect_handle() const { return  wifi_connect_handle; }
+    TaskHandle_t* get_upload_data_to_thing_speak_handle_ptr() { return &upload_data_to_thing_speak_handle; }
+    TaskHandle_t* get_get_SETTING_CO2_data_handle_ptr() { return &get_SETTING_CO2_data_handle; }
+    TaskHandle_t  get_upload_data_to_thing_speak_handle() const { return  upload_data_to_thing_speak_handle; }
+    TaskHandle_t  get_get_SETTING_CO2_data_handle() const { return  get_SETTING_CO2_data_handle; }
 
     // Group getters and setters
     [[nodiscard]] EventGroupHandle_t get_co2_wifi_scan_event_group() const { return co2_wifi_scan_event_group; }
@@ -136,8 +142,10 @@ private:
     char wifi_scan_result[10][64]{};
     int wifi_ssid_index{0};
     TaskHandle_t wifi_connect_handle;
+    TaskHandle_t upload_data_to_thing_speak_handle;
+    TaskHandle_t get_SETTING_CO2_data_handle;
     SemaphoreHandle_t net_mutex{};
-
+    bool is_co2_setting_data_from_hardware{false}; // false: from network, true: from hardware
 };
 
 #endif //THING_SPEAK_H
