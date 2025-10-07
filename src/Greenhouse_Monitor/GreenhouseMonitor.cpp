@@ -146,7 +146,7 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
     xSemaphoreTake(system_data_mutex, portMAX_DELAY);
     systemData.co2SetPoint=log_co2_setpoint;
     xSemaphoreGive(system_data_mutex);
-    co2_controller.setTargetCO2Level(static_cast<float>(systemData.co2SetPoint));
+    co2_controller.setCO2Setpoint(static_cast<float>(systemData.co2SetPoint));
 
     eeprom.readSSID(ssid);
     vTaskDelay(pdMS_TO_TICKS(50));
