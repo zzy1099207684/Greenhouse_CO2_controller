@@ -56,12 +56,13 @@ public:
   char* get_ssid();
   char* get_password();
 
-  void set_CO2_level(uint16_t CO2_level);
+  void set_CO2_level(int CO2_level);
   void set_Relative_humidity(float Relative_humidity);
   void set_Temperature(float Temperature);
   void set_fan_speed(int Fan_speed);
   void set_ssid_list(const char* list[]);
   void set_network_status(bool status);
+  void set_CO2_alarm(bool is_Emergency);
 
   void display_main();
   void display_menu();
@@ -74,6 +75,7 @@ public:
   void handle_set_co2_event(const gpioEvent &event);
   void handle_network_scroll(const gpioEvent &event);
   void handle_network_manual(const gpioEvent &event, char *buffer);
+
 
   void run();
   static void runner(void *params);
@@ -93,6 +95,7 @@ private:
   float Relative_humidity=0.0;
   float Temperature=0.0;
   int fan_speed=0;
+  bool co2_alarm=false;
 
   //Network info
   char ssid[64];
