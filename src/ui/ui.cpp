@@ -111,7 +111,6 @@ void UI_control::set_ssid_list(const char *list[]) {
 void  UI_control::set_network_status(bool status) {
   connected_to_network = status;
   needs_update = true;
-
 }
 
 void UI_control::display_main(){

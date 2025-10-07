@@ -17,6 +17,7 @@ GreenhouseMonitor::GreenhouseMonitor(thing_speak& ts, thing_speak_service& ts_se
     ts(ts), ts_service(ts_service){
     ts.set_co2_wifi_scan_event_group(monitor_event_group);
     system_data_mutex = xSemaphoreCreateMutex();
+    ts.set_net_mutex(xSemaphoreCreateMutex());
 }
 
 void GreenhouseMonitor::network_init() const {
@@ -34,15 +35,7 @@ void GreenhouseMonitor::network_init_task(void *pvParameters) {
 
 void GreenhouseMonitor::network_setting(){
     while (1) {
-        // if (cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA) != CYW43_LINK_UP) {
-        //     xEventGroupClearBits(monitor_event_group, WIFI_CONNECTED);
-        //     //stop ts timers
-        //     if (ts.get_TimerHandle_get_Setting_CO2_data() != nullptr && ts.get_TimerHandle_upload_data_to_thing_speak()!= nullptr) {
-        //         xTimerStop(ts.get_TimerHandle_get_Setting_CO2_data(), 0);
-        //         xTimerStop(ts.get_TimerHandle_upload_data_to_thing_speak(), 0);
-        //     }
-        //
-        // }
+        if (ts.get_is_connected()) ui.set_network_status(true);
         EventBits_t bits = xEventGroupWaitBits(monitor_event_group,
         UI_GET_NETWORK|UI_CONNECT_NETWORK,
         true, false, portMAX_DELAY);;
@@ -66,8 +59,8 @@ void GreenhouseMonitor::network_setting(){
             ts.set_pwd(pwd);
             eeprom.writeSSID(ssid);
             eeprom.writePWD(pwd);
-            // xTimerStart(ts.get_TimerHandle_upload_data_to_thing_speak(), 0);
-            // xTimerStart(ts.get_TimerHandle_get_Setting_CO2_data(), 0);
+            thing_speak_service::wifi_disconnect();
+            vTaskResume(ts.get_wifi_connect_handle());
         }
     }
 }
@@ -155,8 +148,11 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
     ts.set_ssid(ssid);
     ts.set_pwd(pwd);
 
+    vTaskResume(ts.get_wifi_connect_handle());
+
 
     while (1) {
+
         auto bit = xEventGroupWaitBits(monitor_event_group,
             UI_SET_CO2 | NETWORK_SET_CO2| CO2_WARNING,
             pdTRUE, pdFALSE, portMAX_DELAY);
@@ -167,6 +163,7 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
             xSemaphoreGive(system_data_mutex);
             co2_controller.setCO2Setpoint(static_cast<float>(systemData.co2SetPoint));
             ts.set_co2_level_from_network(systemData.co2SetPoint);
+            ts.set_is_co2_setting_data_from_hardware(true);
             eeprom.writeCO2Value(systemData.co2SetPoint);
         }
         if (bit&NETWORK_SET_CO2) {
@@ -190,14 +187,22 @@ void GreenhouseMonitor::greenhouse_monitor_run(void *pvParameters) {
     monitor->greenhouse_monitor_task();
 }
 
+// void wifi_connect_task(void *param) {
+//     auto *ts = static_cast<thing_speak *>(param);
+//     thing_speak_service::wifi_connect(ts);
+// }
+
 
 void GreenhouseMonitor::init() {
 
     xTaskCreate(network_init_task, "network_init_task", 256, this, tskIDLE_PRIORITY+2, nullptr);
-    xTaskCreate(thing_speak_service::start, "thing_speak_service_start", 256, &ts, tskIDLE_PRIORITY + 1, nullptr);
-    xTaskCreate(network_setting_task, "network_connection_task", 1024, this, tskIDLE_PRIORITY + 2, nullptr);
-    xTaskCreate(greenhouse_monitor_run, "greenhouse_monitor_run", 1024, this, tskIDLE_PRIORITY + 2, nullptr);
-    xTaskCreate(read_sensor_run, "read_sensor_task", 1024, this, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(network_setting_task, "network_connection_task", 1024, this, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(greenhouse_monitor_run, "greenhouse_monitor_run", 1024, this, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(read_sensor_run, "read_sensor",1024, this, tskIDLE_PRIORITY + 1, nullptr);
+    // ts.set_ssid("jdhdxuph");
+    // ts.set_pwd("aaaaaaaa");
+    xTaskCreate(thing_speak_service::wifi_connect, "wifi_connect", 1024, &ts, tskIDLE_PRIORITY + 1, ts.get_wifi_connect_handle_ptr());
+    xTaskCreate(thing_speak_service::start, "thing_speak_service_start", 1024, &ts, tskIDLE_PRIORITY + 1, nullptr);
     sensor_timer_start();
 
 }

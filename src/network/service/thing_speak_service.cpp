@@ -49,9 +49,9 @@ void thing_speak_service::get_SETTING_CO2_data(void *param) {
     int count = 0;
     for (;;) {
         auto *ts = static_cast<thing_speak *>(param);
-        xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
-                            WIFI_CONNECTED_GET_SETTING_CO2_DATA, pdFALSE, pdTRUE,
-                            portMAX_DELAY); // wait for wifi connected
+        // xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
+        //                     WIFI_CONNECTED_GET_SETTING_CO2_DATA, pdFALSE, pdTRUE,
+        //                     portMAX_DELAY); // wait for wifi connected
         printf("get_SETTING_CO2_data timer start !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
         // "GET /update?api_key=91TLCMJCMTU4K9Z0&field1=0 HTTP/1.1\r\nHost: api.thingspeak.com\r\nConnection: close\r\n\r\n"
         char request[300] = {};
@@ -94,9 +94,9 @@ void thing_speak_service::deal_SETTING_CO2_data(void *param) {
 void thing_speak_service::upload_data_to_thing_speak(void *param) {
     for (;;) {
         auto *ts = static_cast<thing_speak *>(param);
-        xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
-                            WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK, pdFALSE, pdTRUE,
-                            portMAX_DELAY);
+        // xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
+        //                     WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK, pdFALSE, pdTRUE,
+        //                     portMAX_DELAY);
         printf("upload_data_to_thing_speak timer start !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
         int field_1 = ts->get_CO2_level();
         float field_2 = ts->get_Relative_humidity();
@@ -171,19 +171,20 @@ void thing_speak_service::wifi_connect(void *param) {
 
             if (has_ip) {
                 printf("WiFi connected\n");
-                xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(),
-                                   WIFI_CONNECTED | WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK |
-                                   WIFI_CONNECTED_GET_SETTING_CO2_DATA);
-                vTaskSuspend(ts->get_wifi_connect_handle());
+                xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(),WIFI_CONNECTED);
+                xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(),WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK);
+                xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(),WIFI_CONNECTED_GET_SETTING_CO2_DATA);
+                ts->set_is_connected(true);
                 fail_count = 0;
+                vTaskSuspend(ts->get_wifi_connect_handle());
             } else {
                 printf("connect status: no ip\n");
                 fail_count++;
             }
         } else {
-            xEventGroupClearBits(ts->get_co2_wifi_scan_event_group(),
-                                 WIFI_CONNECTED | WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK |
-                                 WIFI_CONNECTED_GET_SETTING_CO2_DATA);
+            xEventGroupClearBits(ts->get_co2_wifi_scan_event_group(),WIFI_CONNECTED);
+            xEventGroupClearBits(ts->get_co2_wifi_scan_event_group(),WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK);
+            xEventGroupClearBits(ts->get_co2_wifi_scan_event_group(),WIFI_CONNECTED_GET_SETTING_CO2_DATA);
             printf("WiFi connect failed (ret=%d)\n", ret);
             fail_count++;
         }
@@ -277,9 +278,9 @@ void thing_speak_service::network_init(void *param) {
 void thing_speak_service::start(void *param) {
     printf("start start start\n");
     auto *ts = static_cast<thing_speak *>(param);
-    xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
-                        WIFI_CONNECTED, pdFALSE,
-                        pdTRUE, portMAX_DELAY); // wait for wifi connected
+    // xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
+    //                     WIFI_CONNECTED, pdFALSE,
+    //                     pdTRUE, portMAX_DELAY); // wait for wifi connected
     xTaskCreate(get_SETTING_CO2_data, "get_SETTING_CO2_data", 4096, param,
                 tskIDLE_PRIORITY + 1, nullptr);
 
