@@ -1,6 +1,6 @@
 #include "Debug.h"
 
-#ifdef DEBUG_ENABLE
+#ifdef ENABLE_DEBUG_PRINT
 
 #include <cstdarg>
 QueueHandle_t Debug::log_queue = nullptr;

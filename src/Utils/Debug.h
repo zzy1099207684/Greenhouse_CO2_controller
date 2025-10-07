@@ -1,7 +1,7 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
-#ifdef DEBUG_ENABLE
+#ifdef ENABLE_DEBUG_PRINT
 #include "FreeRTOS.h"
 #include "queue.h"
 #include <cstdio>
@@ -15,7 +15,7 @@ public:
 
 private:
     static constexpr size_t MSG_SIZE = 128;
-    static constexpr size_t QUEUE_LENGTH = 10;
+    static constexpr size_t QUEUE_LENGTH = 5;
     static QueueHandle_t log_queue;
     static void logTask(void* param);
     struct LogMsg
@@ -24,8 +24,6 @@ private:
         char msg[MSG_SIZE];
     };
 };
-
-#define DPRINT(...) Debug::print(__VA_ARGS__)
 
 #else
 class Debug
@@ -40,7 +38,6 @@ public:
     }
 };
 
-#define DPRINT(...) ((void)0)
 #endif
 
 #endif // DEBUG_H
