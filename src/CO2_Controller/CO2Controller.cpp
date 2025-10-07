@@ -24,7 +24,7 @@ CO2Controller::CO2Controller(const std::shared_ptr<SafeModbusClient>& safe_modbu
       closeValveTimerHandle(nullptr),
       mixingTimerHandle(nullptr),
       CO2_value(0.0f),
-      CO2_setpoint(800.0f),
+      CO2_setpoint(0.0f),
       controller_state(IDLE)
 {
     xTaskCreate(controlTask, "CO2ControlTask", TASK_STACK_SIZE / sizeof(StackType_t), this,

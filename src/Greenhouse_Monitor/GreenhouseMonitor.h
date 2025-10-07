@@ -68,7 +68,9 @@ private:
 
     TimerHandle_t sensor_timer_handle = nullptr;
     static constexpr uint32_t INTERVAL_MS = 10000;
-
+    static constexpr int CO2_SETPOINT_MAX = 1500; // ppm
+    static constexpr int CO2_SETPOINT_MIN = 200; // ppm
+    static constexpr int CO2_SETPOINT_DEFAULT = 800; // ppm
     EventGroupHandle_t monitor_event_group;
 
     static void sensor_timer_callback(TimerHandle_t xTimer);

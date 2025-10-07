@@ -151,10 +151,15 @@ void GreenhouseMonitor::sensor_timer_start() {
 void GreenhouseMonitor::greenhouse_monitor_task() {
     int log_co2_setpoint = 0;
     eeprom.readCO2Value(log_co2_setpoint);
+    if (log_co2_setpoint < CO2_SETPOINT_MIN || log_co2_setpoint > CO2_SETPOINT_MAX) {
+        log_co2_setpoint = CO2_SETPOINT_DEFAULT;
+    }
     xSemaphoreTake(system_data_mutex, portMAX_DELAY);
     systemData.co2SetPoint=log_co2_setpoint;
     xSemaphoreGive(system_data_mutex);
     co2_controller.setCO2Setpoint(static_cast<float>(systemData.co2SetPoint));
+    ui.set_CO2_Target(systemData.co2SetPoint);
+    ts.set_co2_level_from_network(systemData.co2SetPoint);
 
     eeprom.readSSID(ssid);
     vTaskDelay(pdMS_TO_TICKS(50));
@@ -171,7 +176,7 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
             UI_SET_CO2 | NETWORK_SET_CO2,
             pdTRUE, pdFALSE, portMAX_DELAY);
         if (bit&UI_SET_CO2) {
-            int set_point = ui.get_CO2_level();
+            int set_point = ui.get_CO2_Target();
             xSemaphoreTake(system_data_mutex, portMAX_DELAY);
             systemData.co2SetPoint = set_point;
             xSemaphoreGive(system_data_mutex);
@@ -185,7 +190,7 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
             systemData.co2SetPoint = set_point;
             xSemaphoreGive(system_data_mutex);
             co2_controller.setCO2Setpoint(static_cast<float>(systemData.co2SetPoint));
-            ui.set_CO2_level(systemData.co2SetPoint);
+            ui.set_CO2_Target(systemData.co2SetPoint);
             eeprom.writeCO2Value(systemData.co2SetPoint);
         }
     }
