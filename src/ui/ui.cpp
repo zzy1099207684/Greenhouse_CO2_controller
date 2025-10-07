@@ -269,8 +269,9 @@ void UI_control::handle_network_scroll(const gpioEvent &event) {
   }
   if(event.type == gpioType::BUTTON2) {
     input_mode = InputMode::ManualSSID;
+    memset(ssid,0,sizeof(ssid));
     network_cursor = 0;
-    if(ssid[0] == '\0') ssid[0] = alphabet_lower[0];
+    ssid[0] = alphabet_lower[0];
   }
 
   if(event.type == gpioType::ROT_SWITCH) {
