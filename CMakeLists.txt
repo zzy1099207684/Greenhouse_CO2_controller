@@ -79,7 +79,7 @@ add_library(${PROJECT_NAME}_lib
         rp2040-freertos/src/ipstack/mbedtls_config.h
         rp2040-freertos/src/ipstack/lwipopts_tls.h
         rp2040-freertos/src/ipstack/lwipopts.h
-        rp2040-freertos/src/FreeRTOSConfig.h
+        src/FreeRTOSConfig.h
         ##################network############################
         # Debug
         src/Utils/Debug.cpp
