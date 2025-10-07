@@ -15,7 +15,7 @@
 
 Json_handler handler;
 
-static char *extract_json(char *http_response);
+static char *extract_json(char *http_response, size_t max_len);
 
 extern "C" {
 bool run_tls_client(const uint8_t *cert, size_t cert_len, const char *server, const char *request, int timeout,
@@ -27,8 +27,9 @@ void get_data(char *param, void *tsp) {
     auto *ts = static_cast<thing_speak *>(tsp);
     if (strstr(param, "SAMEORIGIN") != nullptr) {
         if (strstr(param, "feeds") != nullptr) {
-            char *json = extract_json(param);
+            char *json = extract_json(param, strlen(param));
             ts->set_response(json);
+            ts->set_request(nullptr);
             thing_speak_service::deal_SETTING_CO2_data(ts);
         }
     } else {
@@ -44,53 +45,29 @@ void get_data(char *param, void *tsp) {
 }
 }
 
-// timer
 void thing_speak_service::get_SETTING_CO2_data(void *param) {
     int count = 0;
     for (;;) {
         auto *ts = static_cast<thing_speak *>(param);
-        xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
-                            WIFI_CONNECTED_GET_SETTING_CO2_DATA, pdFALSE, pdTRUE,
-                            portMAX_DELAY); // wait for wifi connected
-        printf("get_SETTING_CO2_data timer start !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-        // "GET /update?api_key=91TLCMJCMTU4K9Z0&field1=0 HTTP/1.1\r\nHost: api.thingspeak.com\r\nConnection: close\r\n\r\n"
-        char request[300] = {};
-        sprintf(request,
-                "GET /channels/3083662/feeds.json?api_key=%s&results=1 HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
-                ts->get_read_api_key(), ts->get_api_server());
-        ts->set_request(request);
-        // if co2 setting data is from hardware, do not get data from thing speak 2 times
-        if (!ts->get_is_co2_setting_data_from_hardware()) { // from network
+        // If the hardware has new data, stop pulling and wait for the upload to succeed.
+        if (!ts->get_is_co2_setting_data_from_hardware()) {
+            xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
+                                WIFI_CONNECTED_GET_SETTING_CO2_DATA, pdFALSE, pdTRUE,
+                                portMAX_DELAY); // wait for wifi connected
+            printf("get_SETTING_CO2_data timer start !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+            // "GET /update?api_key=91TLCMJCMTU4K9Z0&field1=0 HTTP/1.1\r\nHost: api.thingspeak.com\r\nConnection: close\r\n\r\n"
+            char request[300] = {};
+            snprintf(request, sizeof(request),
+                     "GET /channels/3083662/feeds.json?api_key=%s&results=1 HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
+                     ts->get_read_api_key(), ts->get_api_server());
+            ts->set_request(request);
+            // from network
             request_HTTPS(ts);
-        } else { // from hardware
-            if(count < 2) {
-                request_HTTPS(ts);
-            }else {
-                ts->set_is_co2_setting_data_from_hardware(false);
-            }
-            count++;
         }
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
 
-void thing_speak_service::deal_SETTING_CO2_data(void *param) {
-    auto *ts = static_cast<thing_speak *>(param);
-    handler.get_value_from_key(ts->get_response(), "feeds");
-    char *value = handler.get_final_result();
-    handler.get_value_from_key(value, "field5");
-    value = handler.get_final_result();
-    if (strcmp(value, "") != 0) {
-        const int field_5 = atoi(value);
-        if ((field_5 != ts->get_co2_level_from_network()) && (field_5 != 0)) {
-            printf("SETTING CO2 level from thing speak: %d\n", field_5);
-            ts->set_co2_level_from_network(field_5);
-            xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), NETWORK_SET_CO2); // set co2 level change bit
-        }
-    }
-}
-
-// task
 void thing_speak_service::upload_data_to_thing_speak(void *param) {
     for (;;) {
         auto *ts = static_cast<thing_speak *>(param);
@@ -106,38 +83,116 @@ void thing_speak_service::upload_data_to_thing_speak(void *param) {
 
         char params[64] = {};
         if (field_1 == INT_MIN) field_1 = 0;
-        sprintf(params, "field1=%d&", field_1);
+        snprintf(params, sizeof(params), "field1=%d&", field_1);
         if (field_2 == FLT_MIN) field_2 = 0.0f;
-        sprintf(params + strlen(params), "field2=%f&", field_2);
+        snprintf(params + strlen(params), sizeof(params) - strlen(params), "field2=%f&", field_2);
         if (field_3 == FLT_MIN) field_3 = 0.0f;
-        sprintf(params + strlen(params), "field3=%f&", field_3);
+        snprintf(params + strlen(params), sizeof(params) - strlen(params), "field3=%f&", field_3);
         if (field_4 == INT_MIN) field_4 = 0;
-        sprintf(params + strlen(params), "field4=%d&", field_4);
+        snprintf(params + strlen(params), sizeof(params) - strlen(params), "field4=%d&", field_4);
         if (field_5 == INT_MIN) field_5 = 0;
-        sprintf(params + strlen(params), "field5=%d&", field_5);
+        snprintf(params + strlen(params), sizeof(params) - strlen(params), "field5=%d&", field_5);
+
         params[strlen(params) - 1] = '\0';
         char request[200] = {};
-        sprintf(request, "GET /update?api_key=%s&%s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
-                ts->get_write_api_key(), params, ts->get_api_server());
+        snprintf(request, sizeof(request),
+                 "GET /update?api_key=%s&%s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
+                 ts->get_write_api_key(), params, ts->get_api_server());
         ts->set_request(request);
         printf("request %s", request);
         request_HTTPS(ts); //upload data to thing speak
-        vTaskDelay(pdMS_TO_TICKS(15000));
+        vTaskDelay(pdMS_TO_TICKS(20000));
     }
 }
+
+void thing_speak_service::deal_SETTING_CO2_data(void *param) {
+    auto *ts = static_cast<thing_speak *>(param);
+    handler.get_value_from_key(ts->get_response(), "feeds");
+    char *value = handler.get_final_result();
+    handler.get_value_from_key(value, "field5");
+    value = handler.get_final_result();
+    if (strcmp(value, "") != 0) {
+        int field_5 = atoi(value);
+        if ((field_5 != ts->get_co2_level_from_network()) && (field_5 != 0)) {
+            printf("SETTING CO2 level from thing speak: %d\n", field_5);
+            ts->set_co2_level_from_network(field_5);
+            if (!ts->get_is_co2_setting_data_from_hardware()) {
+                xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), NETWORK_SET_CO2); // set co2 level change bit
+            }
+        }
+    }
+}
+
+void thing_speak_service::get_setting_co2_val_or_upload(void *param) {
+    auto *ts = static_cast<thing_speak *>(param);
+    char request[300] = {};
+    for (;;) {
+        // If the hardware has new data, stop pulling and wait for the upload to succeed.
+        if (!ts->get_is_co2_setting_data_from_hardware() && !ts->get_task_switch()) {
+                xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
+                                    WIFI_CONNECTED_GET_SETTING_CO2_DATA, pdFALSE, pdTRUE,
+                                    portMAX_DELAY); // wait for wifi connected
+                printf("get_SETTING_CO2_data timer start !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+                // "GET /update?api_key=91TLCMJCMTU4K9Z0&field1=0 HTTP/1.1\r\nHost: api.thingspeak.com\r\nConnection: close\r\n\r\n"
+                snprintf(request, sizeof(request),
+                         "GET /channels/3083662/feeds.json?api_key=%s&results=1 HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
+                         ts->get_read_api_key(), ts->get_api_server());
+                ts->set_request(request);
+                // from network
+                request_HTTPS(ts);
+                ts->set_task_switch(true);
+            vTaskDelay(pdMS_TO_TICKS(15000));
+        } else {
+            auto *ts = static_cast<thing_speak *>(param);
+            xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
+                                WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK, pdFALSE, pdTRUE,
+                                portMAX_DELAY);
+            printf("upload_data_to_thing_speak timer start !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+            int field_1 = ts->get_CO2_level();
+            float field_2 = ts->get_Relative_humidity();
+            float field_3 = ts->get_Temperature();
+            int field_4 = ts->get_fan_speed();
+            int field_5 = ts->get_co2_level_from_network();
+
+            char params[100] = {};
+            if (field_1 == INT_MIN) field_1 = 0;
+            snprintf(params, sizeof(params), "field1=%d&", field_1);
+            if (field_2 == FLT_MIN) field_2 = 0.0f;
+            snprintf(params + strlen(params), sizeof(params) - strlen(params), "field2=%f&", field_2);
+            if (field_3 == FLT_MIN) field_3 = 0.0f;
+            snprintf(params + strlen(params), sizeof(params) - strlen(params), "field3=%f&", field_3);
+            if (field_4 == INT_MIN) field_4 = 0;
+            snprintf(params + strlen(params), sizeof(params) - strlen(params), "field4=%d&", field_4);
+            if (field_5 == INT_MIN) field_5 = 0;
+            snprintf(params + strlen(params), sizeof(params) - strlen(params), "field5=%d&", field_5);
+
+            params[strlen(params) - 1] = '\0';
+            snprintf(request, sizeof(request),
+                     "GET /update?api_key=%s&%s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
+                     ts->get_write_api_key(), params, ts->get_api_server());
+            ts->set_request(request);
+            printf("request %s", request);
+            request_HTTPS(ts); //upload data to thing speak
+            ts->set_task_switch(false);
+            vTaskDelay(pdMS_TO_TICKS(10000));
+        }
+    }
+}
+
 
 void thing_speak_service::request_HTTPS(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
     constexpr uint8_t things_cert[] = THINGSPEAK_CERT;
     const char *server = ts->get_api_server();
     const char *request = ts->get_request();
-    xSemaphoreTake(ts->get_net_mutex(), portMAX_DELAY);
+    // xSemaphoreTake(ts->get_net_mutex(), portMAX_DELAY);
     bool pass = run_tls_client(things_cert, sizeof(things_cert), server, request,
                                TLS_CLIENT_TIMEOUT_SECS, ts);
-    xSemaphoreGive(ts->get_net_mutex());
+    // xSemaphoreGive(ts->get_net_mutex());
 
     if (pass) {
         printf("Test passed\n");
+        ts->set_is_co2_setting_data_from_hardware(false);
     } else {
         printf("Test failed\n");
     }
@@ -171,19 +226,20 @@ void thing_speak_service::wifi_connect(void *param) {
 
             if (has_ip) {
                 printf("WiFi connected\n");
-                xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(),
-                                   WIFI_CONNECTED | WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK |
-                                   WIFI_CONNECTED_GET_SETTING_CO2_DATA);
-                vTaskSuspend(ts->get_wifi_connect_handle());
+                xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(),WIFI_CONNECTED);
+                xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(),WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK);
+                xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(),WIFI_CONNECTED_GET_SETTING_CO2_DATA);
+                ts->set_is_connected(true);
                 fail_count = 0;
+                vTaskSuspend(ts->get_wifi_connect_handle());
             } else {
                 printf("connect status: no ip\n");
                 fail_count++;
             }
         } else {
-            xEventGroupClearBits(ts->get_co2_wifi_scan_event_group(),
-                                 WIFI_CONNECTED | WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK |
-                                 WIFI_CONNECTED_GET_SETTING_CO2_DATA);
+            xEventGroupClearBits(ts->get_co2_wifi_scan_event_group(),WIFI_CONNECTED);
+            xEventGroupClearBits(ts->get_co2_wifi_scan_event_group(),WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK);
+            xEventGroupClearBits(ts->get_co2_wifi_scan_event_group(),WIFI_CONNECTED_GET_SETTING_CO2_DATA);
             printf("WiFi connect failed (ret=%d)\n", ret);
             fail_count++;
         }
@@ -197,45 +253,44 @@ void thing_speak_service::wifi_connect(void *param) {
     }
 }
 
+static char *extract_json(char *http_response, size_t max_len) {
+    if (!http_response) return nullptr;
 
-static char *extract_json(char *http_response) {
     char *body = strstr(http_response, "\r\n{");
-    if (!body) {
-        return nullptr;
-    }
+    if (!body) return nullptr;
     body += 2;
 
     char *r = body;
     char *w = body;
-    while (*r) {
+    size_t count = 0;
+    while (*r && count < max_len - 1) {
         char c = *r++;
-        if (c == '\r' || c == '\n' || c == '\\' || c == '[' || c == ']') {
+        if (c == '\r' || c == '\n' || c == '\\' || c == '[' || c == ']')
             continue;
-        }
         *w++ = c;
+        count++;
     }
     *w = '\0';
     return body;
 }
 
 static int scan_cb(void *param, const cyw43_ev_scan_result_t *res) {
-    if (!res) {
-        // 扫描结束
-        return 0;
-    }
+    if (!res || res->ssid_len <= 0 || !res->ssid) return 0;
+
     auto *ts = static_cast<thing_speak *>(param);
     auto wifi_scan_result = ts->get_wifi_scan_result();
-    const int index = ts->get_wifi_ssid_index();
+    int index = ts->get_wifi_ssid_index();
+
     for (int i = 0; i < 10; ++i) {
         if (wifi_scan_result[i][0] != '\0' &&
             strcmp(wifi_scan_result[i], reinterpret_cast<const char *>(res->ssid)) == 0) {
             return 0;
-        }
+            }
     }
-    if (index < 10 && res->ssid_len > 0) {
+
+    if (index < 10) {
         char buf[64];
-        int len = res->ssid_len;
-        if (len > 63) len = 63;
+        int len = (res->ssid_len < 63) ? res->ssid_len : 63;
         memcpy(buf, res->ssid, len);
         buf[len] = '\0';
         ts->set_wifi_scan_result(index, buf);
@@ -243,6 +298,7 @@ static int scan_cb(void *param, const cyw43_ev_scan_result_t *res) {
     }
     return 0;
 }
+
 
 void thing_speak_service::scan_wifi_ssid_arr(void *param) {
     printf("Start Wi-Fi scan...\n");
@@ -271,21 +327,17 @@ void thing_speak_service::network_init(void *param) {
     cyw43_arch_enable_sta_mode();
     xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_INIT); // set wifi init success bit
     printf("WiFi init success\n");
+    vTaskDelete(nullptr); // delete self task
 }
 
 
 void thing_speak_service::start(void *param) {
     printf("start start start\n");
     auto *ts = static_cast<thing_speak *>(param);
-    xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
-                        WIFI_CONNECTED, pdFALSE,
-                        pdTRUE, portMAX_DELAY); // wait for wifi connected
-    xTaskCreate(get_SETTING_CO2_data, "get_SETTING_CO2_data", 4096, param,
+    xTaskCreate(network_init, "network_init_task", 256, param, tskIDLE_PRIORITY + 2, nullptr);
+    xTaskCreate(wifi_connect, "wifi_connect", 1024, param, tskIDLE_PRIORITY + 1, ts->get_wifi_connect_handle_ptr());
+    xTaskCreate(get_setting_co2_val_or_upload, "get_setting_co2_val_or_upload", 4096, param,
                 tskIDLE_PRIORITY + 1, nullptr);
-
-    xTaskCreate(upload_data_to_thing_speak, "upload_data_to_thing_speak", 4096, param,
-                tskIDLE_PRIORITY + 1, nullptr);
-    vTaskDelete(nullptr); // delete self task
 }
 
 void thing_speak_service::wifi_disconnect() {
