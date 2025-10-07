@@ -17,7 +17,6 @@ GreenhouseMonitor::GreenhouseMonitor(thing_speak& ts, thing_speak_service& ts_se
     ts(ts), ts_service(ts_service){
     ts.set_co2_wifi_scan_event_group(monitor_event_group);
     system_data_mutex = xSemaphoreCreateMutex();
-    ts.set_net_mutex(xSemaphoreCreateMutex());
 }
 
 void GreenhouseMonitor::network_init_task(void *pvParameters) {
@@ -146,13 +145,13 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
     ts.set_co2_level_from_network(systemData.co2SetPoint);
     ui.set_CO2_Target(systemData.co2SetPoint);
 
-    // eeprom.readSSID(ssid);
-    // vTaskDelay(pdMS_TO_TICKS(50));
-    // eeprom.readPWD(pwd);
-    // vTaskDelay(pdMS_TO_TICKS(50));
-    //
-    // ts.set_ssid(ssid);
-    // ts.set_pwd(pwd);
+    eeprom.readSSID(ssid);
+    vTaskDelay(pdMS_TO_TICKS(50));
+    eeprom.readPWD(pwd);
+    vTaskDelay(pdMS_TO_TICKS(50));
+
+    ts.set_ssid(ssid);
+    ts.set_pwd(pwd);
 
     vTaskResume(ts.get_wifi_connect_handle());
 
@@ -196,8 +195,6 @@ void GreenhouseMonitor::init() {
     xTaskCreate(network_setting_task, "network_connection_task", 512, this, tskIDLE_PRIORITY + 2, nullptr);
     xTaskCreate(greenhouse_monitor_run, "greenhouse_monitor_run", 512, this, tskIDLE_PRIORITY + 2, nullptr);
     xTaskCreate(read_sensor_run, "read_sensor",512, this, tskIDLE_PRIORITY + 1, nullptr);
-    ts.set_ssid("Redmi_138D");
-    ts.set_pwd("zzyzmy20272025888");
     thing_speak_service::start(&ts);
     sensor_timer_start();
 

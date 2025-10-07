@@ -126,7 +126,7 @@ public:
         }
     }
 
-    thing_speak() {
+    thing_speak(): net_mutex(xSemaphoreCreateMutex()) {
         set_api_server("api.thingspeak.com");
         set_write_api_key(WRITE_API_KEY);
         set_read_api_key(READ_API_KEY);
@@ -147,9 +147,9 @@ private:
     EventGroupHandle_t co2_wifi_scan_event_group{};
     char wifi_scan_result[10][64]{};
     int wifi_ssid_index{0};
-    TaskHandle_t wifi_connect_handle;
-    TaskHandle_t upload_data_to_thing_speak_handle;
-    TaskHandle_t get_SETTING_CO2_data_handle;
+    TaskHandle_t wifi_connect_handle{};
+    TaskHandle_t upload_data_to_thing_speak_handle{};
+    TaskHandle_t get_SETTING_CO2_data_handle{};
     SemaphoreHandle_t net_mutex;
     bool is_connected{false};
     bool task_switch{false}; // false: get_SETTING_CO2_data task running, true: upload_data_to_thing_speak task running
