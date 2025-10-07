@@ -115,6 +115,14 @@ void GreenhouseMonitor::read_sensor_task() {
             ui.set_Relative_humidity(systemData.humidity);
             ui.set_fan_speed(systemData.fanSpeed);
             ui.set_CO2_level(systemData.co2Level);
+            auto bit = xEventGroupGetBits(monitor_event_group);
+            if (bit&CO2_WARNING) {
+                printf("warning");
+                ui.set_CO2_alarm(true);
+            }
+            else {
+                ui.set_CO2_alarm(false);
+            }
         }
     }
 
@@ -160,7 +168,7 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
 
     while (1) {
         auto bit = xEventGroupWaitBits(monitor_event_group,
-            UI_SET_CO2 | NETWORK_SET_CO2| CO2_WARNING,
+            UI_SET_CO2 | NETWORK_SET_CO2,
             pdTRUE, pdFALSE, portMAX_DELAY);
         if (bit&UI_SET_CO2) {
             int set_point = ui.get_CO2_level();
@@ -179,9 +187,6 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
             co2_controller.setCO2Setpoint(static_cast<float>(systemData.co2SetPoint));
             ui.set_CO2_level(systemData.co2SetPoint);
             eeprom.writeCO2Value(systemData.co2SetPoint);
-        }
-        if (bit&CO2_WARNING) {
-            printf("warning");
         }
     }
 
