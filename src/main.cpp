@@ -5,6 +5,7 @@
 #include "task.h"
 
 #include "Greenhouse_Monitor/GreenhouseMonitor.h"
+#include "Utils/Debug.h"
 
 extern "C" {
     uint32_t read_runtime_ctr(void) {
@@ -16,6 +17,7 @@ extern "C" {
 int main() {
     stdio_init_all();
 
+    Debug::init();
     thing_speak ts;
     thing_speak_service ts_service;
 

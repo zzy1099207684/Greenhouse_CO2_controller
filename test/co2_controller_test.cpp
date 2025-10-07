@@ -11,6 +11,7 @@
 #include "hardware/structs/timer.h"
 #include "pico/stdio.h"
 #include "pico/time.h"
+#include "Utils/Debug.h"
 
 #define CO2_WARNING (1<<7) //warning from co2 controller
 
@@ -51,7 +52,7 @@ void readInputTask(void* pvParameters)
                     command_buffer[command_buffer_index] = '\0'; // null terminate
                     uart->send("\r\n");
                     float new_target = strtof(command_buffer, nullptr);
-                    co2_controller->setTargetCO2Level(new_target);
+                    co2_controller->setCO2Setpoint(new_target);
                     command_buffer[0] = '\0'; // clear buffer
                     command_buffer_index = 0;
                 }
@@ -94,6 +95,7 @@ void co2WarningTask(void* pvParameters)
 int main()
 {
     stdio_init_all();
+    Debug::init();
 
     // Wait for USB serial to stabilize
     sleep_ms(1000);
@@ -113,11 +115,9 @@ int main()
 
     printf("Creating CO2 Controller...\n");
     CO2Controller co2_controller(modbus_client, event_group);
-    co2_controller.setTargetCO2Level(500.0f); // Set target CO2 level to 500 ppm
+    co2_controller.setCO2Setpoint(500.0f); // Set target CO2 level to 500 ppm
 
     printf("Starting CO2 Controller...\n");
-    co2_controller.start();
-
 
     printf("Creating tasks for reading user input...\n");
     static PicoOsUart uart_input(0, 0, 1, 115200);
