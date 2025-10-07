@@ -139,14 +139,25 @@ void CO2Controller::controlTask(void* pvParameters)
             // CO2 value is below the setpoint
             if (CO2_value < CO2_setpoint - DEADBAND)
             {
+                fan.setSpeed(0); // ensure fan is off
                 controller_state = INJECTION_READY;
                 Debug::println("CO2 level low: %.2f ppm. Preparing for injection.", CO2_value);
             }
             // CO2 value is above the setpoint
             else if (CO2_value > CO2_setpoint + DEADBAND)
             {
+                valve.close(); // ensure valve is closed
                 controller_state = VENTILATING;
                 Debug::println("CO2 level high: %.2f ppm. Starting ventilation.", CO2_value);
+            }
+            else
+            {
+                // within deadband, do nothing and ensure everything is off and normal
+                valve.close();
+                fan.setSpeed(0);
+                xTimerStop(closeValveTimerHandle, 0);
+                xTimerStop(mixingTimerHandle, 0);
+                xEventGroupClearBits(self->event_group, CO2_WARNING);
             }
             break;
         case VENTILATING:
