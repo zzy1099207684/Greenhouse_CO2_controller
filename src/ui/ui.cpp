@@ -119,9 +119,9 @@ void UI_control::display_main(){
   EventBits_t bits = xEventGroupGetBits(event_group);
   sprintf(buff,"CO2:%d",co2_level);
   display->text(buff, 0, 0);
-  sprintf(buff,"Humidity: %.1f",Relative_humidity);
+  sprintf(buff,"Humidity:%.1f",Relative_humidity);
   display->text(buff, 0, 8);
-  sprintf(buff,"Temperature: %.1f",Temperature);
+  sprintf(buff,"Temp:%.1f",Temperature);
   display->text(buff, 0, 16);
   if((bits&CO2_WARNING) && fan_speed == 100){
     display->text("Fan on !!ALARM!!", 0, 24);
@@ -236,6 +236,7 @@ void UI_control::handle_set_co2_event(const gpioEvent &event) {
 }
 
 void UI_control::handle_network_scroll(const gpioEvent &event) {
+  strcpy(ssid, ssid_list[ssid_list_index]);
   if(event.type == gpioType::ROT_ENCODER){
     vTaskDelay(pdMS_TO_TICKS(500));
     EventBits_t bits = xEventGroupGetBits(event_group);
