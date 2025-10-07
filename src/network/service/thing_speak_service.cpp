@@ -83,15 +83,15 @@ void thing_speak_service::upload_data_to_thing_speak(void *param) {
 
         char params[64] = {};
         if (field_1 == INT_MIN) field_1 = 0;
-        sprintf(params, "field1=%d&", field_1);
+        snprintf(params, sizeof(param), "field1=%d&", field_1);
         if (field_2 == FLT_MIN) field_2 = 0.0f;
-        sprintf(params + strlen(params), "field2=%f&", field_2);
+        snprintf(params + strlen(params), sizeof(params) - strlen(params), "field2=%f&", field_2);
         if (field_3 == FLT_MIN) field_3 = 0.0f;
-        sprintf(params + strlen(params), "field3=%f&", field_3);
+        snprintf(params + strlen(params), sizeof(params) - strlen(params), "field3=%f&", field_3);
         if (field_4 == INT_MIN) field_4 = 0;
-        sprintf(params + strlen(params), "field4=%d&", field_4);
+        snprintf(params + strlen(params), sizeof(params) - strlen(params), "field4=%d&", field_4);
         if (field_5 == INT_MIN) field_5 = 0;
-        sprintf(params + strlen(params), "field5=%d&", field_5);
+        snprintf(params + strlen(params), sizeof(params) - strlen(params), "field5=%d&", field_5);
 
         params[strlen(params) - 1] = '\0';
         char request[200] = {};
@@ -124,62 +124,57 @@ void thing_speak_service::deal_SETTING_CO2_data(void *param) {
 }
 
 void thing_speak_service::get_setting_co2_val_or_upload(void *param) {
-    int count = 0;
     auto *ts = static_cast<thing_speak *>(param);
     char request[300] = {};
     for (;;) {
-        if (!ts->get_task_switch()) {
-            // get_SETTING_CO2_data task running
-            xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
-                                WIFI_CONNECTED_GET_SETTING_CO2_DATA, pdFALSE, pdTRUE,
-                                portMAX_DELAY);
-            printf("get_SETTING_CO2_data timer start !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-            // "GET /update?api_key=91TLCMJCMTU4K9Z0&field1=0 HTTP/1.1\r\nHost: api.thingspeak.com\r\nConnection: close\r\n\r\n"
-            snprintf(request, sizeof(request),
-                    "GET /channels/3083662/feeds.json?api_key=%s&results=1 HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
-                    ts->get_read_api_key(), ts->get_api_server());
-            ts->set_request(request);
-            // if co2 setting data is from hardware, do not get data from thing speak 2 times
-            if (!ts->get_is_co2_setting_data_from_hardware()) {
+        // If the hardware has new data, stop pulling and wait for the upload to succeed.
+        if (!ts->get_is_co2_setting_data_from_hardware()) {
+            if (!ts->get_task_switch()) {
+                xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
+                                    WIFI_CONNECTED_GET_SETTING_CO2_DATA, pdFALSE, pdTRUE,
+                                    portMAX_DELAY); // wait for wifi connected
+                printf("get_SETTING_CO2_data timer start !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+                // "GET /update?api_key=91TLCMJCMTU4K9Z0&field1=0 HTTP/1.1\r\nHost: api.thingspeak.com\r\nConnection: close\r\n\r\n"
+                snprintf(request, sizeof(request),
+                         "GET /channels/3083662/feeds.json?api_key=%s&results=1 HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
+                         ts->get_read_api_key(), ts->get_api_server());
+                ts->set_request(request);
                 // from network
                 request_HTTPS(ts);
-            } else {
-                // from hardware
-                if (count < 2) {
-                    request_HTTPS(ts);
-                } else {
-                    ts->set_is_co2_setting_data_from_hardware(false);
-                }
-                count++;
             }
-            ts->set_task_switch(true);
             vTaskDelay(pdMS_TO_TICKS(15000));
         } else {
-            // upload_data_to_thing_speak task running
+            auto *ts = static_cast<thing_speak *>(param);
             xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
                                 WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK, pdFALSE, pdTRUE,
                                 portMAX_DELAY);
             printf("upload_data_to_thing_speak timer start !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+            int field_1 = ts->get_CO2_level();
+            float field_2 = ts->get_Relative_humidity();
+            float field_3 = ts->get_Temperature();
+            int field_4 = ts->get_fan_speed();
+            int field_5 = ts->get_co2_level_from_network();
 
             char params[64] = {};
-            if (ts->get_CO2_level() == INT_MIN) ts->set_CO2_level(0);
-            sprintf(params, "field1=%d&", ts->get_CO2_level());
-            if (ts->get_Relative_humidity() == FLT_MIN) ts->set_Relative_humidity(0.0f);
-            sprintf(params + strlen(params), "field2=%f&", ts->get_Relative_humidity());
-            if (ts->get_Temperature() == FLT_MIN) ts->set_Temperature(0.0f);
-            sprintf(params + strlen(params), "field3=%f&", ts->get_Temperature());
-            if (ts->get_fan_speed() == INT_MIN) ts->set_fan_speed(0);
-            sprintf(params + strlen(params), "field4=%d&", ts->get_fan_speed());
-            if (ts->get_co2_level_from_network() == INT_MIN) ts->set_co2_level_from_network(0);
-            sprintf(params + strlen(params), "field5=%d&", ts->get_co2_level_from_network());
+            if (field_1 == INT_MIN) field_1 = 0;
+            snprintf(params, sizeof(param), "field1=%d&", field_1);
+            if (field_2 == FLT_MIN) field_2 = 0.0f;
+            snprintf(params + strlen(params), sizeof(params) - strlen(params), "field2=%f&", field_2);
+            if (field_3 == FLT_MIN) field_3 = 0.0f;
+            snprintf(params + strlen(params), sizeof(params) - strlen(params), "field3=%f&", field_3);
+            if (field_4 == INT_MIN) field_4 = 0;
+            snprintf(params + strlen(params), sizeof(params) - strlen(params), "field4=%d&", field_4);
+            if (field_5 == INT_MIN) field_5 = 0;
+            snprintf(params + strlen(params), sizeof(params) - strlen(params), "field5=%d&", field_5);
+
             params[strlen(params) - 1] = '\0';
+            char request[200] = {};
             snprintf(request, sizeof(request),
                      "GET /update?api_key=%s&%s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
                      ts->get_write_api_key(), params, ts->get_api_server());
             ts->set_request(request);
             printf("request %s", request);
-            request_HTTPS(ts);
-            ts->set_task_switch(false);
+            request_HTTPS(ts); //upload data to thing speak
             vTaskDelay(pdMS_TO_TICKS(10000));
         }
     }
@@ -191,10 +186,10 @@ void thing_speak_service::request_HTTPS(void *param) {
     constexpr uint8_t things_cert[] = THINGSPEAK_CERT;
     const char *server = ts->get_api_server();
     const char *request = ts->get_request();
-    xSemaphoreTake(ts->get_net_mutex(), portMAX_DELAY);
+    // xSemaphoreTake(ts->get_net_mutex(), portMAX_DELAY);
     bool pass = run_tls_client(things_cert, sizeof(things_cert), server, request,
                                TLS_CLIENT_TIMEOUT_SECS, ts);
-    xSemaphoreGive(ts->get_net_mutex());
+    // xSemaphoreGive(ts->get_net_mutex());
 
     if (pass) {
         printf("Test passed\n");
@@ -258,7 +253,6 @@ void thing_speak_service::wifi_connect(void *param) {
         vTaskDelay(pdMS_TO_TICKS(15000));
     }
 }
-
 
 static char *extract_json(char *http_response) {
     char *body = strstr(http_response, "\r\n{");
@@ -342,13 +336,8 @@ void thing_speak_service::start(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
     xTaskCreate(network_init, "network_init_task", 256, param, tskIDLE_PRIORITY + 2, nullptr);
     xTaskCreate(wifi_connect, "wifi_connect", 1024, param, tskIDLE_PRIORITY + 1, ts->get_wifi_connect_handle_ptr());
-    // xTaskCreate(get_SETTING_CO2_data, "get_SETTING_CO2_data", 2048, param,
-    //             tskIDLE_PRIORITY + 1, nullptr);
-
-    xTaskCreate(upload_data_to_thing_speak, "upload_data_to_thing_speak", 2048, param,
+    xTaskCreate(get_setting_co2_val_or_upload, "get_setting_co2_val_or_upload", 4096, param,
                 tskIDLE_PRIORITY + 1, nullptr);
-    // xTaskCreate(get_setting_co2_val_or_upload, "get_setting_co2_val_or_upload", 4096, param,
-    //             tskIDLE_PRIORITY + 1, nullptr);
 }
 
 void thing_speak_service::wifi_disconnect() {

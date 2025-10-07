@@ -187,10 +187,8 @@ void GreenhouseMonitor::init() {
     xTaskCreate(network_setting_task, "network_connection_task", 512, this, tskIDLE_PRIORITY + 2, nullptr);
     xTaskCreate(greenhouse_monitor_run, "greenhouse_monitor_run", 512, this, tskIDLE_PRIORITY + 2, nullptr);
     xTaskCreate(read_sensor_run, "read_sensor",512, this, tskIDLE_PRIORITY + 1, nullptr);
-    ts.set_ssid("jdhdxuph");
-    ts.set_pwd("aaaaaaaa");
-    // ts.set_ssid("Riina");
-    // ts.set_pwd("wsfs1500");
+    ts.set_ssid("Redmi_138D");
+    ts.set_pwd("zzyzmy20272025888");
     thing_speak_service::start(&ts);
     sensor_timer_start();
 
