@@ -11,6 +11,8 @@
 #include "FreeRTOS.h"
 #include <cstring>
 #include <climits>
+#include <semphr.h>
+
 #include "pico/util/datetime.h"
 #include "lwip/apps/sntp.h"
 
@@ -19,6 +21,9 @@
 #define WIFI_SCAN_DONE (1 << 6) // wifi_scan_done
 
 #define WIFI_CONNECTED (1<<9)
+#define WIFI_CONNECTED_GET_SETTING_CO2_DATA (1<<10)
+#define WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK (1<<11)
+
 
 
 #define WRITE_API_KEY "3O010WOMXCBHN887"
@@ -56,6 +61,7 @@ public:
     float get_Temperature() const { return Temperature; }
     int get_fan_speed() const { return fan_speed; }
     int get_co2_level_from_network() const { return co2_level_from_network; }
+    bool get_is_co2_setting_data_from_hardware() const { return is_co2_setting_data_from_hardware; }
 
     // data setters
     void set_CO2_level(const int v) { CO2_level = v; }
@@ -63,8 +69,7 @@ public:
     void set_Temperature(const float v) { Temperature = v; }
     void set_fan_speed(const int v) { fan_speed = v; }
     void set_co2_level_from_network(const int v) { co2_level_from_network = v; }
-    void set_TimerHandle_get_Setting_CO2_data(TimerHandle_t t) { myTimerHandle_get_Setting_CO2_data = t; }
-    void set_TimerHandle_upload_data_to_thing_speak(TimerHandle_t t) { myTimerHandle_upload_data_to_thing_speak = t; }
+    void set_is_co2_setting_data_from_hardware(const bool v) { is_co2_setting_data_from_hardware = v; }
 
     // string getters
     char *get_response() { return response; }
@@ -76,12 +81,22 @@ public:
     char *get_read_api_key() { return read_api_key; }
     char (*get_wifi_scan_result())[64] { return wifi_scan_result; }
     int get_wifi_ssid_index() const { return wifi_ssid_index; }
-    TimerHandle_t get_TimerHandle_get_Setting_CO2_data() const { return myTimerHandle_get_Setting_CO2_data; }
-    TimerHandle_t get_TimerHandle_upload_data_to_thing_speak() const { return myTimerHandle_upload_data_to_thing_speak; }
+
+    // Task handle getters
+    TaskHandle_t* get_wifi_connect_handle_ptr() { return &wifi_connect_handle; }
+    TaskHandle_t  get_wifi_connect_handle() const { return  wifi_connect_handle; }
+    TaskHandle_t* get_upload_data_to_thing_speak_handle_ptr() { return &upload_data_to_thing_speak_handle; }
+    TaskHandle_t* get_get_SETTING_CO2_data_handle_ptr() { return &get_SETTING_CO2_data_handle; }
+    TaskHandle_t  get_upload_data_to_thing_speak_handle() const { return  upload_data_to_thing_speak_handle; }
+    TaskHandle_t  get_get_SETTING_CO2_data_handle() const { return  get_SETTING_CO2_data_handle; }
 
     // Group getters and setters
     [[nodiscard]] EventGroupHandle_t get_co2_wifi_scan_event_group() const { return co2_wifi_scan_event_group; }
     void set_co2_wifi_scan_event_group(EventGroupHandle_t g) { co2_wifi_scan_event_group = g; }
+
+    // Mutex getters and setters
+    [[nodiscard]] SemaphoreHandle_t get_net_mutex() const { return net_mutex; }
+    void set_net_mutex(SemaphoreHandle_t m) { net_mutex = m; }
 
     // string setters
     void set_response(const char *s) { strncpy(response, s, sizeof(response) - 1); }
@@ -110,7 +125,6 @@ public:
         set_write_api_key(WRITE_API_KEY);
         set_read_api_key(READ_API_KEY);
     }
-
 private:
     char response[1500]{};
     char request[200]{};
@@ -127,9 +141,11 @@ private:
     EventGroupHandle_t co2_wifi_scan_event_group{};
     char wifi_scan_result[10][64]{};
     int wifi_ssid_index{0};
-    TimerHandle_t myTimerHandle_get_Setting_CO2_data{nullptr};
-    TimerHandle_t myTimerHandle_upload_data_to_thing_speak{nullptr};
-
+    TaskHandle_t wifi_connect_handle;
+    TaskHandle_t upload_data_to_thing_speak_handle;
+    TaskHandle_t get_SETTING_CO2_data_handle;
+    SemaphoreHandle_t net_mutex{};
+    bool is_co2_setting_data_from_hardware{false}; // false: from network, true: from hardware
 };
 
 #endif //THING_SPEAK_H

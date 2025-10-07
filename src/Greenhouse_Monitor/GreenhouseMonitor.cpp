@@ -66,8 +66,6 @@ void GreenhouseMonitor::network_setting(){
             ts.set_pwd(pwd);
             eeprom.writeSSID(ssid);
             eeprom.writePWD(pwd);
-            if (thing_speak_service::wifi_connect(&ts)) ui.set_network_status(true);
-            else ui.set_network_status(false);
             // xTimerStart(ts.get_TimerHandle_upload_data_to_thing_speak(), 0);
             // xTimerStart(ts.get_TimerHandle_get_Setting_CO2_data(), 0);
         }
@@ -97,7 +95,7 @@ void GreenhouseMonitor::read_sensor_task() {
             vTaskDelay(pdMS_TO_TICKS(50));
             float temperature = humidityTempSensor.readTemperature();
             vTaskDelay(pdMS_TO_TICKS(50));
-            int co2Level = static_cast<int>(co2_controller.getCurrentCO2Level());
+            int co2Level = static_cast<int>(co2_controller.getCO2Value());
             int fanSpeed = static_cast<int>(co2_controller.getFanSpeed());
 
             xSemaphoreTake(system_data_mutex, portMAX_DELAY);
@@ -147,7 +145,7 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
     xSemaphoreTake(system_data_mutex, portMAX_DELAY);
     systemData.co2SetPoint=log_co2_setpoint;
     xSemaphoreGive(system_data_mutex);
-    co2_controller.setTargetCO2Level(static_cast<float>(systemData.co2SetPoint));
+    co2_controller.setCO2Setpoint(static_cast<float>(systemData.co2SetPoint));
 
     eeprom.readSSID(ssid);
     vTaskDelay(pdMS_TO_TICKS(50));
@@ -157,7 +155,6 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
     ts.set_ssid(ssid);
     ts.set_pwd(pwd);
 
-    if (thing_speak_service::wifi_connect(&ts)) ui.set_network_status(true);
 
     while (1) {
         auto bit = xEventGroupWaitBits(monitor_event_group,
@@ -168,7 +165,7 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
             xSemaphoreTake(system_data_mutex, portMAX_DELAY);
             systemData.co2SetPoint = set_point;
             xSemaphoreGive(system_data_mutex);
-            co2_controller.setTargetCO2Level(static_cast<float>(systemData.co2SetPoint));
+            co2_controller.setCO2Setpoint(static_cast<float>(systemData.co2SetPoint));
             ts.set_co2_level_from_network(systemData.co2SetPoint);
             eeprom.writeCO2Value(systemData.co2SetPoint);
         }
@@ -177,7 +174,7 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
             xSemaphoreTake(system_data_mutex, portMAX_DELAY);
             systemData.co2SetPoint = set_point;
             xSemaphoreGive(system_data_mutex);
-            co2_controller.setTargetCO2Level(static_cast<float>(systemData.co2SetPoint));
+            co2_controller.setCO2Setpoint(static_cast<float>(systemData.co2SetPoint));
             ui.set_CO2_level(systemData.co2SetPoint);
             eeprom.writeCO2Value(systemData.co2SetPoint);
         }
@@ -196,7 +193,6 @@ void GreenhouseMonitor::greenhouse_monitor_run(void *pvParameters) {
 
 void GreenhouseMonitor::init() {
 
-    co2_controller.start();
     xTaskCreate(network_init_task, "network_init_task", 256, this, tskIDLE_PRIORITY+2, nullptr);
     xTaskCreate(thing_speak_service::start, "thing_speak_service_start", 256, &ts, tskIDLE_PRIORITY + 1, nullptr);
     xTaskCreate(network_setting_task, "network_connection_task", 1024, this, tskIDLE_PRIORITY + 2, nullptr);
