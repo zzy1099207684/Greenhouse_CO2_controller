@@ -39,7 +39,7 @@ void get_data(char *param, void *tsp) {
         ts->set_Temperature(FLT_MIN);
         ts->set_fan_speed(INT_MIN);
         if (back_res > 0) {
-            printf("upload success\n");
+            printf("request success\n");
         }
     }
 }
@@ -115,8 +115,8 @@ void thing_speak_service::deal_SETTING_CO2_data(void *param) {
         int field_5 = atoi(value);
         if ((field_5 != ts->get_co2_level_from_network()) && (field_5 != 0)) {
             printf("SETTING CO2 level from thing speak: %d\n", field_5);
-            ts->set_co2_level_from_network(field_5);
             if (!ts->get_is_co2_setting_data_from_hardware()) {
+                ts->set_co2_level_from_network(field_5);
                 xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), NETWORK_SET_CO2); // set co2 level change bit
             }
         }
@@ -127,7 +127,7 @@ void thing_speak_service::get_setting_co2_val_or_upload(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
     char request[300] = {};
     for (;;) {
-        // If the hardware has new data, stop pulling and wait for the upload to succeed.
+        // If the hardware has new data, upload it to ThingSpeak.
         if (!ts->get_is_co2_setting_data_from_hardware() && !ts->get_task_switch()) {
                 xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
                                     WIFI_CONNECTED_GET_SETTING_CO2_DATA, pdFALSE, pdTRUE,
@@ -141,7 +141,7 @@ void thing_speak_service::get_setting_co2_val_or_upload(void *param) {
                 // from network
                 request_HTTPS(ts);
                 ts->set_task_switch(true);
-            vTaskDelay(pdMS_TO_TICKS(15000));
+            vTaskDelay(pdMS_TO_TICKS(10000));
         } else {
             auto *ts = static_cast<thing_speak *>(param);
             xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
