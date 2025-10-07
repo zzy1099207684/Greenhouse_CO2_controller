@@ -89,23 +89,27 @@ void UI_control::init(){
   xTaskCreate(runner, "UI control", 512, (void*) this, tskIDLE_PRIORITY + 2, &task_handle);
 }
 
-int UI_control::get_CO2_level(){ return co2SetPoint;}
+int UI_control::get_CO2_Target(){ return co2SetPoint;}
 char* UI_control::get_ssid(){ return ssid;}
 char* UI_control::get_password(){ return password;}
 void UI_control::set_CO2_level(int new_level){ co2_level = new_level;needs_update=true; }
+void UI_control::set_CO2_Target(int new_target){co2SetPoint = new_target; needs_update=true;}
 void UI_control::set_Relative_humidity(float new_humidity){ Relative_humidity = new_humidity; needs_update=true; }
 void UI_control::set_Temperature(float new_temperature){ Temperature = new_temperature; needs_update=true; }
 void UI_control::set_fan_speed(int new_status){ fan_speed= new_status; needs_update=true; }
 
 void UI_control::set_ssid_list(const char *list[]) {
+  ssid_list_count=0;
+  memset(ssid_list,0,sizeof(ssid_list));
   for(int i=0; i < 10; i++) {
-    if(list[i] != nullptr) {
+    if(list[i] != nullptr && strlen(list[i]) > 0) {
+      printf("SSID %d: %s\n", i, list[i]);
       strncpy(ssid_list[i],list[i],63);
       ssid_list[i][63] = '\0';
-    } else {
-      ssid_list[i][0] = '\0';
+      ssid_list_count += 1;
     }
   }
+  strcpy(ssid, ssid_list[ssid_list_index]);
   needs_update=true;
 }
 void  UI_control::set_network_status(bool status) {
@@ -220,9 +224,10 @@ void UI_control::handle_menu_event(const gpioEvent &event) {
         break;
       case 1:
         current_state= UIState::NETWORK_SETTINGS;
-        xEventGroupSetBits(event_group,UI_GET_NETWORK);
         memset(ssid,0,sizeof(ssid));
         memset(password,0,sizeof(password));
+        xEventGroupSetBits(event_group,UI_GET_NETWORK);
+        ssid_list_index = 0;
         input_mode = InputMode::ScrollSSID;
         network_cursor = 0;
         editing_ssid=true;
@@ -238,7 +243,7 @@ void UI_control::handle_menu_event(const gpioEvent &event) {
 void UI_control::handle_set_co2_event(const gpioEvent &event) {
   if(event.type == gpioType::ROT_ENCODER){
     co2SetPoint += event.direction;
-    if(co2SetPoint < 0) co2SetPoint = 0;
+    if(co2SetPoint < 200) co2SetPoint = 200;
     if(co2SetPoint > 1500) co2SetPoint = 1500;
     needs_update = true;
   }
@@ -253,14 +258,12 @@ void UI_control::handle_set_co2_event(const gpioEvent &event) {
 }
 
 void UI_control::handle_network_scroll(const gpioEvent &event) {
-  strcpy(ssid, ssid_list[ssid_list_index]);
   if(event.type == gpioType::ROT_ENCODER){
-    vTaskDelay(pdMS_TO_TICKS(500));
     EventBits_t bits = xEventGroupGetBits(event_group);
     if(bits & UI_SSID_READY) {
       ssid_list_index += event.direction;
-      if(ssid_list_index < 0) ssid_list_index = 0;
-      if(ssid_list_index > 9) ssid_list_index = 9;
+      if(ssid_list_index < 0) ssid_list_index = ssid_list_count - 1;
+      if(ssid_list_index > (ssid_list_count - 1))ssid_list_index = 0;
       strcpy(ssid, ssid_list[ssid_list_index]);
     }
   }
@@ -343,7 +346,6 @@ void UI_control::run() {
   gpioEvent event;
   uint32_t last_press[5] = {0}; // ROT_ENCODER, ROT_SW, BTN1, BTN2 & BTN3
   const uint32_t debounce_ms[5] = {50, 250, 250, 250, 250};
-  EventBits_t bits = xEventGroupGetBits(event_group);
 
   display->fill(0);
   display_main();
@@ -351,7 +353,8 @@ void UI_control::run() {
   needs_update=false;
 
   while(true){
-    if(xQueueReceive(input_queue, &event, pdMS_TO_TICKS(50))==pdTRUE){
+    EventBits_t bits = xEventGroupGetBits(event_group);
+    if(xQueueReceive(input_queue, &event, pdMS_TO_TICKS(50))==pdTRUE) {
       int index = -1;
       switch(event.type) {
         case gpioType::ROT_ENCODER: index = 0; break;
@@ -384,7 +387,7 @@ void UI_control::run() {
           switch(input_mode) {
             case InputMode::ScrollSSID:
               handle_network_scroll(event);
-            break;
+              break;
             case InputMode::ManualSSID:
               handle_network_manual(event,ssid);
             break;

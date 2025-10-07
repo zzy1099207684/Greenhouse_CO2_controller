@@ -52,11 +52,12 @@ public:
   static void gpio_callback(uint gpio, uint32_t events);
   void init();
 
-  int get_CO2_level();
+  int get_CO2_Target();
   char* get_ssid();
   char* get_password();
 
   void set_CO2_level(int CO2_level);
+  void set_CO2_Target(int new_target);
   void set_Relative_humidity(float Relative_humidity);
   void set_Temperature(float Temperature);
   void set_fan_speed(int Fan_speed);
@@ -88,7 +89,7 @@ private:
   gpioEvent gpio_event;
 
   int menu_index=0;
-  int co2SetPoint=700;
+  int co2SetPoint=0;
 
   //Sensor values
   int co2_level=0;
@@ -110,7 +111,7 @@ private:
   char alphabet_symbols[26];
   char alphabet_digits[11];
   char ssid_list[10][64];
-  int ssid_list_count;
+  int ssid_list_count=0;
   bool needs_update = true;
   TaskHandle_t task_handle;
   std::shared_ptr<PicoI2C> i2c_bus;
