@@ -29,17 +29,18 @@ private:
     static constexpr int CO2_SETPOINT_MAX = 1500; // ppm
     static constexpr int CO2_SETPOINT_MIN = 200; // ppm
     static constexpr int CO2_CRITICAL = 2000; // ppm
-    static constexpr int DEADBAND = 5; // ppm, to prevent rapid toggling
+    static constexpr int DEADBAND = 20; // ppm, to prevent rapid toggling
+    static constexpr int VENTILATION_THRESHOLD = 200; // ppm, start fan if CO2 is above setpoint by this much
     // valve parameters
     // open time (ms) = K * diff, with MIN and MAX limits
     static constexpr int VALVE_OPEN_TIME_K = 13;
-    static constexpr int VALVE_OPEN_TIME_MIN = 20; // ms
+    static constexpr int VALVE_OPEN_TIME_MIN = 50; // ms
     static constexpr int VALVE_OPEN_TIME_MAX = 2000; // ms
-    static constexpr int MIXING_TIME = 5 * 1000; // ms, 5 seconds here for a quick demo
+    static constexpr int MIXING_TIME = 10 * 1000; // ms, 10 seconds here for a quick demo
     // fan parameters
     // speed (1-1000) = K * diff, with MIN and MAX limits
     static constexpr int FAN_SPEED_K = 50;
-    static constexpr int FAN_SPEED_MIN = 50; // in range 1 - 1000
+    static constexpr int FAN_SPEED_MIN = 125; // 0 - 1000. Though it accepts 0-1000, below 125 the fan won't really spin
     static constexpr int FAN_SPEED_MAX = 1000; // 1000 = full speed
     // hardware
     CO2Valve valve;
@@ -58,10 +59,9 @@ private:
     enum CO2ControllerState
     {
         IDLE,
-        VENTILATING,
-        INJECTION_READY,
-        INJECTION_FILLING,
-        INJECTION_MIXING,
+        VENTILATING, // only used in WITH_ACTIVE_VENTILATION version. Won't hurt to have it here always.
+        INJECTING,
+        MIXING,
         EMERGENCY
     };
     CO2ControllerState controller_state;

@@ -100,6 +100,17 @@ void test_fan_controller_task(void* params)
         printf("Current counter: %d\n\n", counter);
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
+
+    printf("Test 7: Counter test\n");
+    fan.setSpeed(125);
+    counter = fan.getCounter();
+    printf("Current speed: %d\n", fan.getSpeed());
+    printf("Current counter: %d\n", counter);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    counter = fan.getCounter();
+    printf("Current counter: %d\n", counter);
+    vTaskDelay(pdMS_TO_TICKS(2000));
+
     printf("\n");
 
     printf("=== Fan Controller Test Complete ===\n");

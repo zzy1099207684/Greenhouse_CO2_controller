@@ -119,7 +119,9 @@ target_link_libraries(${PROJECT_NAME}_lib
 target_compile_definitions(${PROJECT_NAME}_lib PUBLIC
         NO_SYS=0            # set to 0 because we want to use lwIP with an RTOS
         PICO_CYW43_ARCH_DEFAULT_COUNTRY_CODE=CYW43_COUNTRY_FINLAND
-#        ENABLE_DEBUG_PRINT
+        ENABLE_DEBUG_PRINT
+        WITH_ACTIVE_VENTILATION
+
 )
 
 # Now create the main executable with just the main.cpp
