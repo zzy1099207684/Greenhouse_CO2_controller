@@ -64,6 +64,7 @@ public:
     bool get_is_co2_setting_data_from_hardware() const { return is_co2_setting_data_from_hardware; }
     bool get_is_connected() const { return is_connected; }
     bool get_task_switch() const { return task_switch; }
+    bool get_async_network_to_hardware() const { return async_network_to_hardware; }
 
     // data setters
     void set_CO2_level(const int v) { CO2_level = v; }
@@ -74,6 +75,7 @@ public:
     void set_is_co2_setting_data_from_hardware(const bool v) { is_co2_setting_data_from_hardware = v; }
     void set_is_connected(const bool v) { is_connected = v; }
     void set_task_switch(const bool v) { task_switch = v; }
+    void set_async_network_to_hardware(const bool v) { async_network_to_hardware = v; }
 
     // string getters
     char *get_response() { return response; }
@@ -149,10 +151,10 @@ private:
     TaskHandle_t upload_data_to_thing_speak_handle;
     TaskHandle_t get_SETTING_CO2_data_handle;
     SemaphoreHandle_t net_mutex;
-    bool is_co2_setting_data_from_hardware{false}; // false: from network, true: from hardware
     bool is_connected{false};
-    bool task_switch{false};
-    // false: get_SETTING_CO2_data task running, true: upload_data_to_thing_speak task running
+    bool task_switch{false}; // false: get_SETTING_CO2_data task running, true: upload_data_to_thing_speak task running
+    bool async_network_to_hardware{false}; // false: network data doesn't async, true: network data async to hardware
+    bool is_co2_setting_data_from_hardware{false}; // false: from network, true: from hardware
 };
 
 #endif //THING_SPEAK_H
