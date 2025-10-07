@@ -60,11 +60,15 @@ void thing_speak_service::get_SETTING_CO2_data(void *param) {
                 ts->get_read_api_key(), ts->get_api_server());
         ts->set_request(request);
         // if co2 setting data is from hardware, do not get data from thing speak 2 times
-        if (!ts->get_is_co2_setting_data_from_hardware() && count < 2) {
+        if (!ts->get_is_co2_setting_data_from_hardware()) { // from network
             request_HTTPS(ts);
+        } else { // from hardware
+            if(count < 2) {
+                request_HTTPS(ts);
+            }else {
+                ts->set_is_co2_setting_data_from_hardware(false);
+            }
             count++;
-        } else {
-            count = 0;
         }
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
