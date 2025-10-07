@@ -42,7 +42,7 @@ CO2Controller::CO2Controller(const std::shared_ptr<SafeModbusClient>& safe_modbu
  */
 bool CO2Controller::setCO2Setpoint(float ppm)
 {
-    if (ppm < 200.0f || ppm > CO2_SETPOINT_MAX)
+    if (ppm < CO2_SETPOINT_MIN || ppm > CO2_SETPOINT_MAX)
     {
         Debug::println("Invalid CO2 setpoint: %.2f ppm. Must be between %d and %d ppm.",
                        ppm, CO2_SETPOINT_MIN, CO2_SETPOINT_MAX);
@@ -131,8 +131,6 @@ void CO2Controller::controlTask(void* pvParameters)
             controller_state = EMERGENCY;
             xEventGroupSetBits(self->event_group, CO2_WARNING);
             Debug::println("CO2 level critical: %.2f ppm! Entering EMERGENCY state.", CO2_value);
-            Debug::println(
-                "a very long message...................................................................................................................................................................................................");
         }
 
         switch (controller_state)
