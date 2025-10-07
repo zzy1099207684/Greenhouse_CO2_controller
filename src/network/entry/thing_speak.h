@@ -63,6 +63,7 @@ public:
     int get_co2_level_from_network() const { return co2_level_from_network; }
     bool get_is_co2_setting_data_from_hardware() const { return is_co2_setting_data_from_hardware; }
     bool get_is_connected() const { return is_connected; }
+    bool get_task_switch() const { return task_switch; }
 
     // data setters
     void set_CO2_level(const int v) { CO2_level = v; }
@@ -72,6 +73,7 @@ public:
     void set_co2_level_from_network(const int v) { co2_level_from_network = v; }
     void set_is_co2_setting_data_from_hardware(const bool v) { is_co2_setting_data_from_hardware = v; }
     void set_is_connected(const bool v) { is_connected = v; }
+    void set_task_switch(const bool v) { task_switch = v; }
 
     // string getters
     char *get_response() { return response; }
@@ -149,6 +151,8 @@ private:
     SemaphoreHandle_t net_mutex;
     bool is_co2_setting_data_from_hardware{false}; // false: from network, true: from hardware
     bool is_connected{false};
+    bool task_switch{false};
+    // false: get_SETTING_CO2_data task running, true: upload_data_to_thing_speak task running
 };
 
 #endif //THING_SPEAK_H

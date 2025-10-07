@@ -20,13 +20,6 @@ GreenhouseMonitor::GreenhouseMonitor(thing_speak& ts, thing_speak_service& ts_se
     ts.set_net_mutex(xSemaphoreCreateMutex());
 }
 
-void GreenhouseMonitor::network_init() const {
-    printf("wifi_init start\n");
-    ts_service.network_init(&ts);
-    //thing_speak_service::wifi_connect(&ts);
-    vTaskDelete(nullptr);
-}
-
 void GreenhouseMonitor::network_init_task(void *pvParameters) {
     auto* monitor = static_cast<GreenhouseMonitor*>(pvParameters);
     monitor->network_init();
@@ -35,7 +28,7 @@ void GreenhouseMonitor::network_init_task(void *pvParameters) {
 
 void GreenhouseMonitor::network_setting(){
     while (1) {
-        if (ts.get_is_connected()) ui.set_network_status(true);
+        // if (ts.get_is_connected()) ui.set_network_status(true);
         EventBits_t bits = xEventGroupWaitBits(monitor_event_group,
         UI_GET_NETWORK|UI_CONNECT_NETWORK,
         true, false, portMAX_DELAY);;
@@ -139,14 +132,15 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
     systemData.co2SetPoint=log_co2_setpoint;
     xSemaphoreGive(system_data_mutex);
     co2_controller.setCO2Setpoint(static_cast<float>(systemData.co2SetPoint));
+    ts.set_co2_level_from_network(systemData.co2SetPoint);
 
-    eeprom.readSSID(ssid);
-    vTaskDelay(pdMS_TO_TICKS(50));
-    eeprom.readPWD(pwd);
-    vTaskDelay(pdMS_TO_TICKS(50));
-
-    ts.set_ssid(ssid);
-    ts.set_pwd(pwd);
+    // eeprom.readSSID(ssid);
+    // vTaskDelay(pdMS_TO_TICKS(50));
+    // eeprom.readPWD(pwd);
+    // vTaskDelay(pdMS_TO_TICKS(50));
+    //
+    // ts.set_ssid(ssid);
+    // ts.set_pwd(pwd);
 
     vTaskResume(ts.get_wifi_connect_handle());
 
@@ -187,22 +181,17 @@ void GreenhouseMonitor::greenhouse_monitor_run(void *pvParameters) {
     monitor->greenhouse_monitor_task();
 }
 
-// void wifi_connect_task(void *param) {
-//     auto *ts = static_cast<thing_speak *>(param);
-//     thing_speak_service::wifi_connect(ts);
-// }
 
 
 void GreenhouseMonitor::init() {
-
-    xTaskCreate(network_init_task, "network_init_task", 256, this, tskIDLE_PRIORITY+2, nullptr);
-    xTaskCreate(network_setting_task, "network_connection_task", 1024, this, tskIDLE_PRIORITY + 1, nullptr);
-    xTaskCreate(greenhouse_monitor_run, "greenhouse_monitor_run", 1024, this, tskIDLE_PRIORITY + 1, nullptr);
-    xTaskCreate(read_sensor_run, "read_sensor",1024, this, tskIDLE_PRIORITY + 1, nullptr);
-    // ts.set_ssid("jdhdxuph");
-    // ts.set_pwd("aaaaaaaa");
-    xTaskCreate(thing_speak_service::wifi_connect, "wifi_connect", 1024, &ts, tskIDLE_PRIORITY + 1, ts.get_wifi_connect_handle_ptr());
-    xTaskCreate(thing_speak_service::start, "thing_speak_service_start", 1024, &ts, tskIDLE_PRIORITY + 1, nullptr);
+    xTaskCreate(network_setting_task, "network_connection_task", 512, this, tskIDLE_PRIORITY + 2, nullptr);
+    xTaskCreate(greenhouse_monitor_run, "greenhouse_monitor_run", 512, this, tskIDLE_PRIORITY + 2, nullptr);
+    xTaskCreate(read_sensor_run, "read_sensor",512, this, tskIDLE_PRIORITY + 1, nullptr);
+    ts.set_ssid("jdhdxuph");
+    ts.set_pwd("aaaaaaaa");
+    // ts.set_ssid("Riina");
+    // ts.set_pwd("wsfs1500");
+    thing_speak_service::start(&ts);
     sensor_timer_start();
 
 }
