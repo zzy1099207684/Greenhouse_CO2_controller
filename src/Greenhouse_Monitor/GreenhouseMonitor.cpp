@@ -22,7 +22,7 @@ GreenhouseMonitor::GreenhouseMonitor(thing_speak& ts, thing_speak_service& ts_se
 void GreenhouseMonitor::network_init() const {
     printf("wifi_init start\n");
     ts_service.network_init(&ts);
-    thing_speak_service::wifi_connect(&ts);
+    //thing_speak_service::wifi_connect(&ts);
     vTaskDelete(nullptr);
 }
 
@@ -66,7 +66,8 @@ void GreenhouseMonitor::network_setting(){
             ts.set_pwd(pwd);
             eeprom.writeSSID(ssid);
             eeprom.writePWD(pwd);
-            thing_speak_service::wifi_connect(&ts);
+            if (thing_speak_service::wifi_connect(&ts)) ui.set_network_status(true);
+            else ui.set_network_status(false);
             // xTimerStart(ts.get_TimerHandle_upload_data_to_thing_speak(), 0);
             // xTimerStart(ts.get_TimerHandle_get_Setting_CO2_data(), 0);
         }
@@ -153,10 +154,10 @@ void GreenhouseMonitor::greenhouse_monitor_task() {
     eeprom.readPWD(pwd);
     vTaskDelay(pdMS_TO_TICKS(50));
 
-    printf("ssid: %s\n", ssid);
-    printf("pwd: %s\n", pwd);
     ts.set_ssid(ssid);
     ts.set_pwd(pwd);
+
+    if (thing_speak_service::wifi_connect(&ts)) ui.set_network_status(true);
 
     while (1) {
         auto bit = xEventGroupWaitBits(monitor_event_group,

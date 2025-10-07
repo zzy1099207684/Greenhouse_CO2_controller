@@ -92,10 +92,10 @@ void UI_control::init(){
 int UI_control::get_CO2_level(){ return co2SetPoint;}
 char* UI_control::get_ssid(){ return ssid;}
 char* UI_control::get_password(){ return password;}
-void UI_control::set_CO2_level(uint16_t new_level){ co2_level = new_level;}
-void UI_control::set_Relative_humidity(float new_humidity){ Relative_humidity = new_humidity;}
-void UI_control::set_Temperature(float new_temperature){ Temperature = new_temperature;}
-void UI_control::set_fan_speed(int new_status){ fan_speed= new_status;}
+void UI_control::set_CO2_level(uint16_t new_level){ co2_level = new_level; needs_update = true;}
+void UI_control::set_Relative_humidity(float new_humidity){ Relative_humidity = new_humidity; needs_update = true;}
+void UI_control::set_Temperature(float new_temperature){ Temperature = new_temperature; needs_update = true;}
+void UI_control::set_fan_speed(int new_status){ fan_speed= new_status; needs_update = true;}
 
 void UI_control::set_ssid_list(const char *list[]) {
   for(int i=0; i < 10; i++) {
@@ -106,9 +106,12 @@ void UI_control::set_ssid_list(const char *list[]) {
       ssid_list[i][0] = '\0';
     }
   }
+  needs_update = true;
 }
 void  UI_control::set_network_status(bool status) {
   connected_to_network = status;
+  needs_update = true;
+
 }
 
 void UI_control::display_main(){

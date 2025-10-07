@@ -120,15 +120,17 @@ void thing_speak_service::request_HTTPS(void *param) {
     vTaskDelay(pdMS_TO_TICKS(100));
 }
 
-void thing_speak_service::wifi_connect(void *param) {
+bool thing_speak_service::wifi_connect(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
     if (cyw43_arch_wifi_connect_timeout_ms(ts->get_ssid(), ts->get_pwd(), CYW43_AUTH_WPA2_AES_PSK, 10000)) {
         printf("failed to connect\n");
         vTaskDelay(pdMS_TO_TICKS(1000));
+        return false;
     }
     else {
         printf("WiFi connected\n");
         xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_CONNECTED);
+        return true;
     }
 }
 
