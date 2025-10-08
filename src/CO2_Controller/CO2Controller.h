@@ -29,14 +29,14 @@ private:
     static constexpr int CO2_SETPOINT_MAX = 1500; // ppm
     static constexpr int CO2_SETPOINT_MIN = 200; // ppm
     static constexpr int CO2_CRITICAL = 2000; // ppm
-    static constexpr int DEADBAND = 20; // ppm, to prevent rapid toggling
-    static constexpr int VENTILATION_THRESHOLD = 200; // ppm, start fan if CO2 is above setpoint by this much
+    static constexpr int DEADBAND = 50; // ppm, to prevent rapid toggling
+    static constexpr int VENTILATION_THRESHOLD = 200; // used only in active ventilation version
     // valve parameters
     // open time (ms) = K * diff, with MIN and MAX limits
     static constexpr int VALVE_OPEN_TIME_K = 13;
     static constexpr int VALVE_OPEN_TIME_MIN = 50; // ms
     static constexpr int VALVE_OPEN_TIME_MAX = 2000; // ms
-    static constexpr int MIXING_TIME = 10 * 1000; // ms, 10 seconds here for a quick demo
+    static constexpr int MIXING_TIME = 60 * 1000; // ms, can be smaller for a quick demo
     // fan parameters
     // speed (1-1000) = K * diff, with MIN and MAX limits
     static constexpr int FAN_SPEED_K = 50;
