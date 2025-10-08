@@ -179,13 +179,13 @@ void thing_speak_service::get_setting_co2_val_or_upload(void *param) {
                      "GET /update?api_key=%s&%s HTTP/1.1\r\nHost: %s\r\nConnection: close\r\n\r\n",
                      ts->get_write_api_key(), params, ts->get_api_server());
             ts->set_request(request);
-            // printf("request %s", request);
+            printf("request %s", request);
             request_HTTPS(ts); //upload data to thing speak
             ts->set_task_switch(false);
             if (!ts->get_is_co2_setting_data_from_hardware()) {
-                print_waiting_log("Waiting for hardware to upload data to ThingSpeak", 15, 1000);
-            } else {
                 print_waiting_log("Waiting for ThingSpeak to provide new CO2 setting", 5, 1000);
+            } else {
+                print_waiting_log("Waiting for hardware to upload data to ThingSpeak", 15, 1000);
             }
         }
     }
@@ -322,9 +322,7 @@ void thing_speak_service::scan_wifi_ssid_arr(void *param) {
     if (rc != 0) {
         printf("scan start failed: %d\n", rc);
     }
-    cyw43_arch_lwip_begin();
-    vTaskDelay(pdMS_TO_TICKS(3000));
-    cyw43_arch_lwip_end();
+    vTaskDelay(pdMS_TO_TICKS(6000));
     xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_SCAN_DONE);
     printf("Scan success.\n");
 }
