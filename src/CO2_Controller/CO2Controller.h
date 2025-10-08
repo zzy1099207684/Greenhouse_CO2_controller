@@ -30,7 +30,11 @@ private:
     static constexpr int CO2_SETPOINT_MIN = 200; // ppm
     static constexpr int CO2_CRITICAL = 2000; // ppm
     static constexpr int DEADBAND = 50; // ppm, to prevent rapid toggling
-    static constexpr int VENTILATION_THRESHOLD = 200; // used only in active ventilation version
+
+#ifdef WITH_ACTIVE_VENTILATION
+    static constexpr int ACTIVE_VENTILATION_THRESHOLD = 200; // used only in active ventilation version
+#endif
+
     // valve parameters
     // open time (ms) = K * diff, with MIN and MAX limits
     static constexpr int VALVE_OPEN_TIME_K = 13;
@@ -59,11 +63,14 @@ private:
     enum CO2ControllerState
     {
         IDLE,
-        VENTILATING, // only used in WITH_ACTIVE_VENTILATION version. Won't hurt to have it here always.
         INJECTING,
         MIXING,
-        EMERGENCY
+        EMERGENCY,
+#ifdef WITH_ACTIVE_VENTILATION
+        VENTILATING, // only used in WITH_ACTIVE_VENTILATION version.
+#endif
     };
+
     CO2ControllerState controller_state;
 };
 

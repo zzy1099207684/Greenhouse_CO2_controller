@@ -165,20 +165,17 @@ void CO2Controller::controlTask(void* pvParameters)
                 controller_state = INJECTING;
                 Debug::println("Injecting CO2 for %d ms.", open_time);
             }
-            // CO2 value is above the setpoint + ventilation start threshold. i.e. the CO2 is too high
-            else if (CO2_value > CO2_setpoint + VENTILATION_THRESHOLD)
-            {
 #ifdef WITH_ACTIVE_VENTILATION
+            // CO2 value is above the setpoint + ventilation start threshold. i.e. the CO2 is much higher than setpoint
+            else if (CO2_value > CO2_setpoint + ACTIVE_VENTILATION_THRESHOLD)
+            {
+                // start ventilation in this version
                 controller_state = VENTILATING;
                 valve.close();
                 Debug::println("CO2 level %.2f >> setpoint %.2f ppm. Too high, starting ventilation.",
                                CO2_value, CO2_setpoint);
-#else
-                valve.close();
-                Debug::println("CO2 level %.2f >> setpoint %.2f ppm.", CO2_value, CO2_setpoint);
-                Debug::println("But who cares, it will drop anyway ( (╯°□°)╯︵ ┻━┻.");
-#endif
             }
+#endif
             else
             {
                 // within deadband, do nothing
@@ -192,8 +189,8 @@ void CO2Controller::controlTask(void* pvParameters)
                 Debug::println("CO2 level normal: %.2f ppm. Everything is good.", CO2_value);
             }
             break;
-        case VENTILATING:
 #ifdef WITH_ACTIVE_VENTILATION
+        case VENTILATING:
             // when the co2 level is much higher than the setpoint
             // i.e. higher than setpoint + ventilation threshold
             // start ventilation until CO2 is back to the setpoint (with deadband)
@@ -217,9 +214,6 @@ void CO2Controller::controlTask(void* pvParameters)
                 }
                 fan.setSpeed(speed);
             }
-#else
-            // This version does not have active ventilation
-            // Only emergency state will turn on the fan
 #endif
             break;
         case INJECTING:
