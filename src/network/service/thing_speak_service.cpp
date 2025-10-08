@@ -16,6 +16,9 @@
 
 
 Json_handler handler;
+#define TWO_TASK 0
+
+void print_waiting_log(const char *fmt, int times = 1, int each_ms = 100);
 
 static char *extract_json(char *http_response, size_t max_len);
 
@@ -47,6 +50,7 @@ void get_data(char *param, void *tsp) {
 }
 }
 
+#ifdef TWO_TASK
 void thing_speak_service::get_SETTING_CO2_data(void *param) {
     int count = 0;
     for (;;) {
@@ -106,6 +110,7 @@ void thing_speak_service::upload_data_to_thing_speak(void *param) {
         vTaskDelay(pdMS_TO_TICKS(20000));
     }
 }
+#endif
 
 void thing_speak_service::deal_SETTING_CO2_data(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
@@ -128,7 +133,7 @@ void thing_speak_service::deal_SETTING_CO2_data(void *param) {
 
 void thing_speak_service::get_setting_co2_val_or_upload(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
-    char request[300] = {};
+    static char request[300] = {};
     for (;;) {
         // If the hardware has new data, upload it to ThingSpeak.
         if (!ts->get_is_co2_setting_data_from_hardware() && !ts->get_task_switch()) {
@@ -144,7 +149,7 @@ void thing_speak_service::get_setting_co2_val_or_upload(void *param) {
             // from network
             request_HTTPS(ts);
             ts->set_task_switch(true);
-            vTaskDelay(pdMS_TO_TICKS(15000));
+            print_waiting_log("Waiting for hardware to upload data to ThingSpeak", 15, 1000);
         } else {
             auto *ts = static_cast<thing_speak *>(param);
             xEventGroupWaitBits(ts->get_co2_wifi_scan_event_group(),
@@ -177,6 +182,11 @@ void thing_speak_service::get_setting_co2_val_or_upload(void *param) {
             // printf("request %s", request);
             request_HTTPS(ts); //upload data to thing speak
             ts->set_task_switch(false);
+            if (!ts->get_is_co2_setting_data_from_hardware()) {
+                print_waiting_log("Waiting for hardware to upload data to ThingSpeak", 15, 1000);
+            } else {
+                print_waiting_log("Waiting for ThingSpeak to provide new CO2 setting", 5, 1000);
+            }
         }
     }
 }
@@ -316,7 +326,7 @@ void thing_speak_service::scan_wifi_ssid_arr(void *param) {
     vTaskDelay(pdMS_TO_TICKS(3000));
     cyw43_arch_lwip_end();
     xEventGroupSetBits(ts->get_co2_wifi_scan_event_group(), WIFI_SCAN_DONE);
-    printf("Scan done.\n");
+    printf("Scan success.\n");
 }
 
 void thing_speak_service::network_init(void *param) {
@@ -337,7 +347,7 @@ void thing_speak_service::start(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
     xTaskCreate(network_init, "network_init_task", 256, param, tskIDLE_PRIORITY + 2, nullptr);
     xTaskCreate(wifi_connect, "wifi_connect", 512, param, tskIDLE_PRIORITY + 2, ts->get_wifi_connect_handle_ptr());
-    xTaskCreate(get_setting_co2_val_or_upload, "get_setting_co2_val_or_upload", 1536, param,
+    xTaskCreate(get_setting_co2_val_or_upload, "get_setting_co2_val_or_upload", 1532, param,
                 tskIDLE_PRIORITY + 1, nullptr);
 }
 
@@ -351,4 +361,11 @@ void thing_speak_service::wifi_disconnect() {
     vTaskDelay(pdMS_TO_TICKS(300));
     cyw43_wifi_leave(&cyw43_state, CYW43_ITF_STA);
     vTaskDelay(pdMS_TO_TICKS(500));
+}
+
+void print_waiting_log(const char *fmt, int times, int each_ms) {
+    for (int i = 0; i < times; i++) {
+        printf("%s, rest of %d\n", fmt, times - i);
+        vTaskDelay(pdMS_TO_TICKS(each_ms));
+    }
 }
