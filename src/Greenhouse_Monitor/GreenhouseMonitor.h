@@ -17,24 +17,7 @@
 #include "network/service/thing_speak_service.h"
 #include "CO2_Controller/CO2Controller.h"
 #include "ui/ui.h"
-
-#define UI_SET_CO2 (1<<0) //co2 setting ready from ui
-#define UI_GET_NETWORK (1<<1) //ui needs ssid list
-#define UI_SSID_READY (1<<2) //set by controller, tell ui ssid list ready
-#define UI_CONNECT_NETWORK (1<<3) //password ready from ui
-
-
-#define NETWORK_SET_CO2 (1<<4) //co2 setting from network
-#define WIFI_INIT (1 << 5) // wifi_init_success
-#define WIFI_SCAN_DONE (1 << 6) // wifi_scan_done
-
-#define CO2_WARNING (1<<7) //warning from co2 controller, co2 critical high level
-
-#define ENV_SENSOR_TIMER_REACHED (1<<8)
-
-#define WIFI_CONNECTED (1<<9)
-
-#define FAN_WARNING (1<<12) //warning from fan controller, fan is not working
+#include "event_bits_def.h"
 
 
 

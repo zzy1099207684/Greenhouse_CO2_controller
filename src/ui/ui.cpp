@@ -6,6 +6,7 @@
 #include <task.h>
 #include <cstdio>
 #include <list>
+#include "event_bits_def.h"
 
 #define BTN1 9
 #define BTN2 8
@@ -13,11 +14,6 @@
 #define ROT_A 10
 #define ROT_B 11
 #define ROT_SW 12
-#define UI_SET_CO2 (1 << 0)
-#define UI_GET_NETWORK (1 << 1)
-#define UI_SSID_READY (1 << 2)
-#define UI_CONNECT_NETWORK (1 << 3)
-#define WIFI_CONNECTED (1 << 9)
 
 UI_control* UI_control::instance_ptr = nullptr;
 

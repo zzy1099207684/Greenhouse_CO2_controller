@@ -13,8 +13,7 @@
 #include "FanController.h"
 #include <cstdio>
 #include "Utils/Debug.h"
-
-#define CO2_WARNING (1<<7) //warning from co2 controller
+#include "event_bits_def.h"
 
 CO2Controller::CO2Controller(const std::shared_ptr<SafeModbusClient>& safe_modbus_client,
                              EventGroupHandle_t event_group)

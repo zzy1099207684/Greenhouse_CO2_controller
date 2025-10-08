@@ -10,8 +10,7 @@
 #include "timers.h"
 #include "event_groups.h"
 #include "Utils/Debug.h"
-
-#define FAN_WARNING (1<<12) // warning from fan controller, fan is not working
+#include "event_bits_def.h"
 
 FanController::FanController(const std::shared_ptr<SafeModbusClient>& safe_modbus_client,
                              EventGroupHandle_t event_group)

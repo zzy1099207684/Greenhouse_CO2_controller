@@ -15,14 +15,7 @@
 
 #include "pico/util/datetime.h"
 #include "lwip/apps/sntp.h"
-
-#define NETWORK_SET_CO2 (1<<4) //co2 setting from network
-#define WIFI_INIT (1 << 5) // wifi_init_success
-#define WIFI_SCAN_DONE (1 << 6) // wifi_scan_done
-
-#define WIFI_CONNECTED (1<<9)
-#define WIFI_CONNECTED_GET_SETTING_CO2_DATA (1<<10)
-#define WIFI_CONNECTED_UPLOAD_DATA_TO_THING_SPEAK (1<<11)
+#include "event_bits_def.h"
 
 
 
