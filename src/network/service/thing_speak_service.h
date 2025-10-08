@@ -5,15 +5,17 @@
 #ifndef THINK_SPEAK_SERVICE_H
 #define THINK_SPEAK_SERVICE_H
 #include "IPStack.h"
-
+#define TWO_TASK 0
 
 class thing_speak_service {
 public:
     // get SETTING CO2 data from thing speak
+    # if TWO_TASK
     static void get_SETTING_CO2_data(void *param);
+    static void upload_data_to_thing_speak(void *param);
+    # endif
     static void deal_SETTING_CO2_data(void *param);
     // upload sensor data to thing speak
-    static void upload_data_to_thing_speak(void *param);
     static void get_setting_co2_val_or_upload(void *param);
 
 
