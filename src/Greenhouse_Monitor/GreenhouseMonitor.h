@@ -29,6 +29,8 @@ private:
     std::shared_ptr<PicoI2C> i2c0bus;
     std::shared_ptr<PicoI2C> i2c1bus;
 
+    EventGroupHandle_t monitor_event_group;
+
     CO2Controller co2_controller;
     UI_control ui;
 
@@ -56,7 +58,6 @@ private:
     static constexpr int CO2_SETPOINT_MAX = 1500; // ppm
     static constexpr int CO2_SETPOINT_MIN = 200; // ppm
     static constexpr int CO2_SETPOINT_DEFAULT = 800; // ppm
-    EventGroupHandle_t monitor_event_group;
 
     static void sensor_timer_callback(TimerHandle_t xTimer);
     void notify_sensors() const;
