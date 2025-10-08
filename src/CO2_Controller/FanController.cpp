@@ -11,7 +11,7 @@
 #include "event_groups.h"
 #include "Utils/Debug.h"
 
-#define FAN_WARNING (1<<10) // warning from fan controller, fan is not working
+#define FAN_WARNING (1<<12) // warning from fan controller, fan is not working
 
 FanController::FanController(const std::shared_ptr<SafeModbusClient>& safe_modbus_client,
                              EventGroupHandle_t event_group)
@@ -52,10 +52,9 @@ void FanController::setSpeed(int new_speed)
     }
     else
     {
-        // fan is stopped or too slow to work properly, stop health check and clear warning
+        // fan is stopped or too slow to work properly, stop health check
         xTimerStop(fan_check_timer, 0);
         zero_count = 0;
-        xEventGroupClearBits(event_group, FAN_WARNING);
     }
 }
 
@@ -87,7 +86,7 @@ void FanController::fanCheckTimerCallback(TimerHandle_t xTimer)
     }
     else
     {
-        // counter is not 0, fan is working normally, reset zero count
+        // counter is not 0, fan is working normally, reset zero count and clear warning
         Debug::println("Fan working normally, counter=%d", counter);
         xEventGroupClearBits(self->event_group, FAN_WARNING);
         self->zero_count = 0;

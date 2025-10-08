@@ -141,24 +141,30 @@ void UI_control::display_main(){
   sprintf(buff,"%.1fC",Temperature);
   display->text("Temp:", 0, 24);
   display->text(buff, 70, 24);
-  if(co2_alarm && fan_error){ // If both CO2 alarm and fan error, display both and short
+  
+  // if co2 alarm or fan error, use inverted colors
+  bool needs_invert = co2_alarm || fan_error;
+  
+  if (needs_invert) {
     display->rect(0,33,128,8,1,true);
-    display->text("Fan:", 0, 33,0);
-    display->text("CO2&FAN ERR", 40, 33,0);
-  } else if(co2_alarm){
-    display->rect(0,33,128,8,1,true);
-    display->text("Fan:", 0, 33,0);
-    display->text("CO2 ALARM", 40, 33,0);
-  } else if(fan_error){
-    display->rect(0,33,128,8,1,true);
-    display->text("Fan:", 0, 33,0);
-    display->text("FAN ERROR", 40, 33,0);
-  } else if (fan_speed > 0){
-    display->text("Fan:", 0, 33);
-    display->text("ON", 70, 33);
-  } else{
-    display->text("Fan:", 0, 33);
-    display->text("OFF", 70, 33);
+  }
+  
+  // Fan label: show (ERR) if fan has error
+  if (fan_error) {
+    display->text("Fan(ERR):", 0, 33, needs_invert ? 0 : 1);
+  } else {
+    display->text("Fan:", 0, 33, needs_invert ? 0 : 1);
+  }
+  
+  // Fan status: show ALARM, ERROR, ON, or OFF
+  if (co2_alarm) {
+    display->text("ALARM", 70, 33, needs_invert ? 0 : 1);
+  } else if (fan_error) {
+    display->text("ERROR", 70, 33, needs_invert ? 0 : 1);
+  } else if (fan_speed > 0) {
+    display->text("ON", 70, 33, needs_invert ? 0 : 1);
+  } else {
+    display->text("OFF", 70, 33, needs_invert ? 0 : 1);
   }
   display->text("Network:", 0, 42);
   if(connected_to_network) {

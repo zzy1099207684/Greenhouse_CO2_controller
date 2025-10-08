@@ -34,7 +34,7 @@
 
 #define WIFI_CONNECTED (1<<9)
 
-#define FAN_WARNING (1<<10) //warning from fan controller, fan is not working
+#define FAN_WARNING (1<<12) //warning from fan controller, fan is not working
 
 
 
