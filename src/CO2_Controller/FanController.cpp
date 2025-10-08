@@ -81,6 +81,7 @@ void FanController::fanCheckTimerCallback(TimerHandle_t xTimer)
         {
             // fan is broken, set warning
             xEventGroupSetBits(self->event_group, FAN_WARNING);
+            Debug::println("Fan is broken");
         }
     }
     else
