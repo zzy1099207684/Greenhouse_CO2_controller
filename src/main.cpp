@@ -11,6 +11,22 @@ extern "C" {
     uint32_t read_runtime_ctr(void) {
         return timer_hw->timerawl;
     }
+
+    // Stack overflow hook - called when FreeRTOS detects stack overflow
+    void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+        printf("\n!!! STACK OVERFLOW: Task '%s' !!!\n", pcTaskName);
+        while(1) {
+            tight_loop_contents();
+        }
+    }
+
+    // Malloc failed hook
+    void vApplicationMallocFailedHook(void) {
+        printf("\n!!! MALLOC FAILED !!!\n");
+        while(1) {
+            tight_loop_contents();
+        }
+    }
 }
 
 

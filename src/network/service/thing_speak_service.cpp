@@ -337,7 +337,7 @@ void thing_speak_service::start(void *param) {
     auto *ts = static_cast<thing_speak *>(param);
     xTaskCreate(network_init, "network_init_task", 256, param, tskIDLE_PRIORITY + 2, nullptr);
     xTaskCreate(wifi_connect, "wifi_connect", 512, param, tskIDLE_PRIORITY + 2, ts->get_wifi_connect_handle_ptr());
-    xTaskCreate(get_setting_co2_val_or_upload, "get_setting_co2_val_or_upload", 512, param,
+    xTaskCreate(get_setting_co2_val_or_upload, "get_setting_co2_val_or_upload", 1536, param,
                 tskIDLE_PRIORITY + 1, nullptr);
 }
 
