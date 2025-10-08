@@ -101,11 +101,16 @@ void GreenhouseMonitor::read_sensor_task() {
             ui.set_CO2_level(systemData.co2Level);
             auto bit = xEventGroupGetBits(monitor_event_group);
             if (bit&CO2_WARNING) {
-                printf("warning");
                 ui.set_CO2_alarm(true);
             }
             else {
                 ui.set_CO2_alarm(false);
+            }
+            if (bit&FAN_WARNING) {
+                ui.set_fan_error(true);
+            }
+            else {
+                ui.set_fan_error(false);
             }
         }
     }

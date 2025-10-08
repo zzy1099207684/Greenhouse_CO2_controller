@@ -122,6 +122,11 @@ void UI_control::set_CO2_alarm(bool is_Emergency) {
   needs_update=true;
 }
 
+void UI_control::set_fan_error(bool is_error) {
+  fan_error = is_error;
+  needs_update=true;
+}
+
 void UI_control::display_main(){
   char buff[32];
   sprintf(buff,"%dppm",co2_level);
@@ -136,10 +141,18 @@ void UI_control::display_main(){
   sprintf(buff,"%.1fC",Temperature);
   display->text("Temp:", 0, 24);
   display->text(buff, 70, 24);
-  if(co2_alarm){
+  if(co2_alarm && fan_error){ // If both CO2 alarm and fan error, display both and short
     display->rect(0,33,128,8,1,true);
     display->text("Fan:", 0, 33,0);
-    display->text("!!ALARM!!", 40, 33,0);
+    display->text("CO2&FAN ERR", 40, 33,0);
+  } else if(co2_alarm){
+    display->rect(0,33,128,8,1,true);
+    display->text("Fan:", 0, 33,0);
+    display->text("CO2 ALARM", 40, 33,0);
+  } else if(fan_error){
+    display->rect(0,33,128,8,1,true);
+    display->text("Fan:", 0, 33,0);
+    display->text("FAN ERROR", 40, 33,0);
   } else if (fan_speed > 0){
     display->text("Fan:", 0, 33);
     display->text("ON", 70, 33);

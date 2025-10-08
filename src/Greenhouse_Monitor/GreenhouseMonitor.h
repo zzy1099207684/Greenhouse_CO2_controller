@@ -28,11 +28,13 @@
 #define WIFI_INIT (1 << 5) // wifi_init_success
 #define WIFI_SCAN_DONE (1 << 6) // wifi_scan_done
 
-#define CO2_WARNING (1<<7) //warning from co2 controller
+#define CO2_WARNING (1<<7) //warning from co2 controller, co2 critical high level
 
 #define ENV_SENSOR_TIMER_REACHED (1<<8)
 
 #define WIFI_CONNECTED (1<<9)
+
+#define FAN_WARNING (1<<10) //warning from co2 controller, fan is not working
 
 
 
@@ -67,7 +69,7 @@ private:
     char pwd[64]{};
 
     TimerHandle_t sensor_timer_handle = nullptr;
-    static constexpr uint32_t INTERVAL_MS = 10000;
+    static constexpr uint32_t INTERVAL_MS = 1000; // for demo purpose, set to 1 second, fast
     static constexpr int CO2_SETPOINT_MAX = 1500; // ppm
     static constexpr int CO2_SETPOINT_MIN = 200; // ppm
     static constexpr int CO2_SETPOINT_DEFAULT = 800; // ppm

@@ -19,7 +19,7 @@
 CO2Controller::CO2Controller(const std::shared_ptr<SafeModbusClient>& safe_modbus_client,
                              EventGroupHandle_t event_group)
     : sensor(safe_modbus_client),
-      fan(safe_modbus_client),
+      fan(safe_modbus_client, event_group),
       event_group(event_group),
       closeValveTimerHandle(nullptr),
       mixingTimerHandle(nullptr),

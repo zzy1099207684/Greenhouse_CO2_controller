@@ -64,6 +64,7 @@ public:
   void set_ssid_list(const char* list[]);
   void set_network_status(bool status);
   void set_CO2_alarm(bool is_Emergency);
+  void set_fan_error(bool is_error);
 
   void display_main();
   void display_menu();
@@ -97,6 +98,7 @@ private:
   float Temperature=0.0;
   int fan_speed=0;
   bool co2_alarm=false;
+  bool fan_error=false;
 
   //Network info
   char ssid[64];

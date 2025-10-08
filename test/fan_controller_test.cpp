@@ -8,6 +8,7 @@
 #include "modbus/ModbusClient.h"
 #include "FreeRTOS.h"
 #include "task.h"
+#include "event_groups.h"
 #include <cstdio>
 #include <memory>
 #include <pico/stdio.h>
@@ -33,9 +34,13 @@ void test_fan_controller_task(void* params)
     printf("Creating Modbus client...\n");
     auto modbus_client = std::make_shared<SafeModbusClient>(uart);
 
+    // Create event group for warnings
+    printf("Creating event group...\n");
+    EventGroupHandle_t event_group = xEventGroupCreate();
+
     // Create fan controller
     printf("Creating fan controller...\n");
-    FanController fan(modbus_client);
+    FanController fan(modbus_client, event_group);
     int counter = 0;
     printf("Setup complete!\n\n");
 
@@ -43,50 +48,40 @@ void test_fan_controller_task(void* params)
     printf("Test 1: Setting fan speed to 0 (stop)\n");
     printf("--------------------------------------\n");
     fan.setSpeed(0);
-    counter = fan.getCounter();
     printf("Fan speed set to: 0\n");
     printf("Current speed: %d\n\n", fan.getSpeed());
-    printf("Current counter: %d\n\n", counter);
     vTaskDelay(pdMS_TO_TICKS(2000));
 
     // Test 2: Set fan speed to 25% (250/1000)
     printf("Test 2: Setting fan speed to 25%% (250)\n");
     printf("----------------------------------------\n");
     fan.setSpeed(250);
-    counter = fan.getCounter();
     printf("Fan speed set to: 250\n");
     printf("Current speed: %d\n\n", fan.getSpeed());
-    printf("Current counter: %d\n\n", counter);
     vTaskDelay(pdMS_TO_TICKS(3000));
 
     // Test 3: Set fan speed to 50% (500/1000)
     printf("Test 3: Setting fan speed to 50%% (500)\n");
     printf("----------------------------------------\n");
     fan.setSpeed(500);
-    counter = fan.getCounter();
     printf("Fan speed set to: 500\n");
     printf("Current speed: %d\n\n", fan.getSpeed());
-    printf("Current counter: %d\n\n", counter);
     vTaskDelay(pdMS_TO_TICKS(3000));
 
     // Test 4: Set fan speed to 75% (750/1000)
     printf("Test 4: Setting fan speed to 75%% (750)\n");
     printf("----------------------------------------\n");
     fan.setSpeed(750);
-    counter = fan.getCounter();
     printf("Fan speed set to: 750\n");
     printf("Current speed: %d\n\n", fan.getSpeed());
-    printf("Current counter: %d\n\n", counter);
     vTaskDelay(pdMS_TO_TICKS(3000));
 
     // Test 5: Set fan speed to 100% (1000/1000)
     printf("Test 5: Setting fan speed to 100%% (1000)\n");
     printf("-----------------------------------------\n");
     fan.setSpeed(1000);
-    counter = fan.getCounter();
     printf("Fan speed set to: 1000\n");
     printf("Current speed: %d\n\n", fan.getSpeed());
-    printf("Current counter: %d\n\n", counter);
     vTaskDelay(pdMS_TO_TICKS(3000));
 
     // Test 6: Ramp down gradually
@@ -96,18 +91,14 @@ void test_fan_controller_task(void* params)
     {
         printf("Setting speed to: %d\n", speed);
         fan.setSpeed(speed);
-        counter = fan.getCounter();
-        printf("Current counter: %d\n\n", counter);
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
 
     printf("Test 7: Counter test\n");
     fan.setSpeed(125);
-    counter = fan.getCounter();
     printf("Current speed: %d\n", fan.getSpeed());
     printf("Current counter: %d\n", counter);
     vTaskDelay(pdMS_TO_TICKS(1000));
-    counter = fan.getCounter();
     printf("Current counter: %d\n", counter);
     vTaskDelay(pdMS_TO_TICKS(2000));
 
