@@ -256,7 +256,7 @@ void UI_control::handle_menu_event(const gpioEvent &event) {
 
 void UI_control::handle_set_co2_event(const gpioEvent &event) {
   if(event.type == gpioType::ROT_ENCODER){
-    co2SetPoint += event.direction;
+    co2SetPoint += event.direction * 10;
     if(co2SetPoint < 200) co2SetPoint = 200;
     if(co2SetPoint > 1500) co2SetPoint = 1500;
     needs_update = true;
