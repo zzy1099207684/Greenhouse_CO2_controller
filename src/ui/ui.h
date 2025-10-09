@@ -13,6 +13,7 @@
 #include "ssd1306os.h"
 #include "pico/stdlib.h"
 
+
 enum class UIState{
   MAIN,
   SETTING_MENU,
@@ -32,6 +33,7 @@ enum class CharSet{
   Symbols,
   Numbers
 };
+
 enum class gpioType{
   BUTTON1,
   BUTTON2,
@@ -52,10 +54,12 @@ public:
   static void gpio_callback(uint gpio, uint32_t events);
   void init();
 
+  // Class getters.
   int get_CO2_Target();
   char* get_ssid();
   char* get_password();
 
+  //Class setters.
   void set_CO2_level(int CO2_level);
   void set_CO2_Target(int new_target);
   void set_Relative_humidity(float Relative_humidity);
@@ -66,6 +70,7 @@ public:
   void set_CO2_alarm(bool is_Emergency);
   void set_fan_error(bool is_error);
 
+  //Functions to display information on OLED screen.
   void display_main();
   void display_menu();
   void display_set_co2();
@@ -73,17 +78,18 @@ public:
   void display_network();
   void display_successfull_set_network();
 
+  //Functions to handle different input based on where you are in the program.
   void handle_menu_event(const gpioEvent &event);
   void handle_set_co2_event(const gpioEvent &event);
   void handle_network_scroll(const gpioEvent &event);
   void handle_network_manual(const gpioEvent &event, char *buffer);
-
 
   void run();
   static void runner(void *params);
 
 
 private:
+  //Needed struct and enumeration variables
   UIState current_state;
   InputMode input_mode;
   CharSet char_set;
@@ -107,6 +113,7 @@ private:
   int ssid_list_index=0;
   bool connected_to_network=false;
 
+  //Variables needed when setting SSID and Password.
   char alphabet_lower[27];
   char alphabet_upper[27];
   char alphabet_symbols[26];
@@ -114,6 +121,8 @@ private:
   char ssid_list[10][64];
   int ssid_list_count=0;
   bool needs_update = true;
+
+  //Needed handles and pointers.
   TaskHandle_t task_handle;
   std::shared_ptr<PicoI2C> i2c_bus;
   ssd1306os* display;
