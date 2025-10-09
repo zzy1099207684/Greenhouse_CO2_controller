@@ -45,6 +45,8 @@ void get_data(char *param, void *tsp) {
         ts->set_fan_speed(INT_MIN);
         if (back_res > 0) {
             printf("request success\n");
+            ts->set_is_co2_setting_data_from_hardware(false);
+            ts->set_task_switch(false); // switch to upload data task
         }
     }
 }
@@ -179,7 +181,6 @@ void thing_speak_service::get_setting_co2_val_or_upload(void *param) {
             ts->set_request(request);
             printf("request %s", request);
             request_HTTPS(ts); //upload data to thing speak
-            ts->set_task_switch(false);
             if (!ts->get_is_co2_setting_data_from_hardware()) {
                 print_waiting_log("Waiting for ThingSpeak to provide new CO2 setting", 5, 1000);
             } else {
@@ -204,7 +205,6 @@ void thing_speak_service::request_HTTPS(void *param) {
 
     if (pass) {
         printf("request passed\n");
-        ts->set_is_co2_setting_data_from_hardware(false);
     } else {
         printf("request failed\n");
     }
