@@ -147,7 +147,7 @@ Data synchronization using event groups, mutexes, and software timers.
 | Rotary Encoder SW | GPIO 12  | Pull-up, active low |
 | CO₂ Valve Relay   | GPIO 27  | Active high         |
 
-## Build Instrcutions
+## Dependencies
 
 ### Required Tools and Libraries
 
@@ -175,9 +175,9 @@ Download from [ARM Developer](https://developer.arm.com/downloads/-/arm-gnu-tool
 
 This project needs `AArch32 bare-metal target (arm-none-eabi)`.
 
-### Build
+## Build
 
-#### Method 1: Building UF2 File
+### Method 1: Building UF2 File
 
 This method generates a `.uf2` file that can be drag-and-dropped onto the Pico in bootloader mode.
 
@@ -204,7 +204,7 @@ Ater building, it will output file `Greenhouse_CO2.uf2`. To install:
 3. Drag `Greenhouse_CO2.uf2` to the RPI-RP2 drive
 4. Pico automatically reboots and runs the program
 
-#### Method 2: Using OpenOCD
+### Method 2: Using OpenOCD
 
 This method uses a debugger probe (e.g. Raspberry Pi Debug Probe).
 
@@ -220,7 +220,7 @@ brew install openocd
 
 Or use the prebuilt binary from  Raspberry Pi's downstream fork: https://github.com/raspberrypi/openocd
 
-**Programming via OpenOCD:**
+**Flash via OpenOCD:**
 
 ```bash
 # From build directory
