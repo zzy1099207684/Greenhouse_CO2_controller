@@ -49,6 +49,9 @@ void UI_control::init(){ //Initialize required variables.
 
   memset(ssid,0,sizeof(ssid));          //Initialize ssid char buffer empty.
   memset(password,0,sizeof(password));  //Initialize password char buffer empty.
+  memset(ssid_list,0,sizeof(ssid_list));
+  ssid_list_count = 0;
+  ssid_list_index = 0;
 
   strcpy(alphabet_lower,"abcdefghijklmnopqrstuvwxyz");  // Set up all character buffers needed in manual input.
   strcpy(alphabet_upper,"ABCDEFGHIJKLMNOPQRSTUVWXYZ");
