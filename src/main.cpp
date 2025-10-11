@@ -1,38 +1,48 @@
-#include <stdio.h>
+#include <memory>
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 #include "FreeRTOS.h"
 #include "task.h"
 
+#include "Greenhouse_Monitor/GreenhouseMonitor.h"
+#include "Utils/Debug.h"
+
 extern "C" {
     uint32_t read_runtime_ctr(void) {
         return timer_hw->timerawl;
     }
-}
 
+    // Stack overflow hook - called when FreeRTOS detects stack overflow
+    void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+        printf("\n!!! STACK OVERFLOW: Task '%s' !!!\n", pcTaskName);
+        while(1) {
+            tight_loop_contents();
+        }
+    }
 
-#define LED_PIN 22  // GPIO 25 or change to your LED pin
-
-void blink_task(void *pvParameters) {
-    gpio_init(LED_PIN);
-    gpio_set_dir(LED_PIN, GPIO_OUT);
-
-    while (1) {
-        gpio_put(LED_PIN, 1);                    // LED on
-        vTaskDelay(pdMS_TO_TICKS(500));          // 500ms delay
-
-        gpio_put(LED_PIN, 0);                    // LED off
-        vTaskDelay(pdMS_TO_TICKS(500));          // 500ms delay
+    // Malloc failed hook
+    void vApplicationMallocFailedHook(void) {
+        printf("\n!!! MALLOC FAILED !!!\n");
+        while(1) {
+            tight_loop_contents();
+        }
     }
 }
+
 
 int main() {
     stdio_init_all();
 
-    printf("Starting GPIO blinker...\n");
-    
-    xTaskCreate(blink_task, "Blink", 256, NULL, 1, NULL);
+    Debug::init();
+    thing_speak ts;
+    thing_speak_service ts_service;
+
+    GreenhouseMonitor monitor(ts, ts_service);
+    printf("monitor started\n");
+    monitor.init();
+
     vTaskStartScheduler();
-    
+    while (1) {}
+
     return 0;
 }
